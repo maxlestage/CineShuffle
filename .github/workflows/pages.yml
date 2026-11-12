@@ -34,6 +34,8 @@ jobs:
   build:
     name: Export statique
     runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.pages.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -42,7 +44,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - id: pages
         uses: actions/configure-pages@v6
+        continue-on-error: true
+      - name: GitHub Pages n'est pas activé
+        if: steps.pages.outcome != 'success'
+        run: |
+          echo "::warning title=GitHub Pages::Activez Pages une fois : Settings → Pages → Source « GitHub Actions », puis relancez ce workflow."
       - name: Îlots (WebAssembly)
+        if: steps.pages.outcome == 'success'
         run: |
           cargo build --locked --lib --target wasm32-unknown-unknown --profile wasm-release
           version=$(grep -A1 '^name = "wasm-bindgen"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')
@@ -51,17 +59,20 @@ jobs:
           wasm-bindgen --target web --no-typescript --remove-name-section --remove-producers-section \
             --out-dir pkg target/wasm32-unknown-unknown/wasm-release/reelpick.wasm
       - name: Pages et fichiers
+        if: steps.pages.outcome == 'success'
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: cargo run --locked --release -- export dist
       - uses: actions/upload-pages-artifact@v5
+        if: steps.pages.outcome == 'success'
         with:
           path: dist
 
   deploy:
     name: Déploiement
     needs: build
+    if: needs.build.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
