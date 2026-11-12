@@ -9,13 +9,14 @@ use paquets::prelude::*;
 use super::api::today_seed;
 use super::{THEME_COLOR, absolute, api_base, is_static, link, pool_url, source};
 
-/// La mention que demande TMDB, et la source des disponibilités.
-pub const ATTRIBUTION: &str = "Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB. \
-     Affiches, résumés et distributions : The Movie Database (TMDB). Disponibilités : JustWatch.";
+/// D'où viennent les données (et leurs licences).
+pub const ATTRIBUTION: &str = "Catalogue : Wikidata (licence CC0), titres associés à chaque plateforme (originaux \
+     et distribution) ; la disponibilité en France peut varier. Résumés : Wikipédia (licence CC BY-SA), avec le lien \
+     de chaque article. Affiches : illustrations des articles de Wikipédia, propriété de leurs ayants droit.";
 
-/// Le catalogue complet est-il disponible (serveur avec une clé TMDB) ?
+/// Le catalogue complet est-il disponible (serveur, Wikidata chargé) ?
 fn live_catalogue() -> bool {
-    !is_static() && source::name() == "tmdb"
+    !is_static() && source::name() == "wikidata"
 }
 
 /// Le lien vers le catalogue d'une plateforme.
@@ -244,12 +245,20 @@ fn site_footer(suggestions: Vec<Suggestion>) -> Element {
                             div()
                                 .class("fine-print")
                                 .child(
-                                    a().class("tmdb-logo")
-                                        .href("https://www.themoviedb.org/")
-                                        .attr("rel", "noopener")
-                                        .attr("target", "_blank")
-                                        .attr("aria-label", "The Movie Database (TMDB)")
-                                        .text("TMDB"),
+                                    div()
+                                        .class("data-credits")
+                                        .child(
+                                            a().href("https://www.wikidata.org/")
+                                                .attr("rel", "noopener")
+                                                .attr("target", "_blank")
+                                                .text("Wikidata"),
+                                        )
+                                        .child(
+                                            a().href("https://fr.wikipedia.org/")
+                                                .attr("rel", "noopener")
+                                                .attr("target", "_blank")
+                                                .text("Wikipédia"),
+                                        ),
                                 )
                                 .child(p().text(ATTRIBUTION))
                                 .child(p().text(
@@ -369,11 +378,17 @@ pub async fn home(_req: Request) -> Page {
         pool: pool_url(),
     })
     .unwrap_or_default();
-    // Tout le catalogue (TMDB, en direct ou par l'API qu'appelle le site statique), ou le
-    // nombre de titres connus sans TMDB.
+    // Tout le catalogue (Wikidata, en direct ou par l'API qu'appelle le site statique), ou
+    // le nombre de titres connus sans lui.
     let everything = live_catalogue() || (is_static() && api_base().is_some());
-    let known = source::offline().len();
-    let count = if everything {
+    let known = thousands(if live_catalogue() {
+        source::size()
+    } else {
+        source::offline().len()
+    });
+    let count = if live_catalogue() {
+        format!("{known} films et séries")
+    } else if everything {
         "tous les films et séries".to_owned()
     } else {
         format!("{known} films et séries")
@@ -415,10 +430,10 @@ pub async fn home(_req: Request) -> Page {
                                 .child(
                                     ul().class("hero-stats")
                                         .child(li().child(strong().text("4")).text(" plateformes"))
-                                        .child(if everything {
+                                        .child(if everything && !live_catalogue() {
                                             li().child(strong().text("Tous")).text(" les films et séries")
                                         } else {
-                                            li().child(strong().text(known.to_string())).text(" films et séries")
+                                            li().child(strong().text(known.clone())).text(" films et séries")
                                         })
                                         .child(li().child(strong().text("0")).text(" cookie")),
                                 ),
@@ -501,6 +516,19 @@ pub async fn home(_req: Request) -> Page {
         content,
         suggestions,
     )
+}
+
+/// `27122` → `27 122` (espace fine insécable).
+fn thousands(n: usize) -> String {
+    let digits = n.to_string();
+    let mut out = String::new();
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push('\u{202f}');
+        }
+        out.push(c);
+    }
+    out
 }
 
 /// Une étape de « Comment ça marche ».
@@ -598,7 +626,7 @@ fn tab(href: String, label: &'static str, current: bool, extra: &str) -> Element
 }
 
 /// `GET /catalogue/?plateforme=netflix&type=film&page=2` : tout le catalogue d'une
-/// plateforme, page par page (avec TMDB), ou la sélection embarquée par plateforme.
+/// plateforme, page par page (Wikidata), ou la sélection embarquée par plateforme.
 pub async fn catalogue(req: Request) -> Page {
     let suggestions = footer_suggestions().await;
     let platform = req
@@ -661,21 +689,47 @@ pub async fn catalogue(req: Request) -> Page {
                     .class("container")
                     .child(
                         head.child(p().class("muted").text(format!(
-                            "Tous les {} disponibles en abonnement sur {} en France, les plus populaires d'abord.",
-                            if kind == Kind::Film { "films" } else { "séries" },
+                            "Tous les {} que Wikidata associe à {}, les plus connus d'abord.",
+                            if kind == Kind::Film {
+                                "films"
+                            } else {
+                                "séries"
+                            },
                             platform.label()
                         )))
-                        .child(div().class("chips").children(Platform::ALL.into_iter().map(|p| {
-                            tab(url(p, kind, 1), p.label(), p == platform, &format!("chip-{}", p.slug()))
-                        })))
                         .child(
                             div()
                                 .class("chips")
-                                .child(tab(url(platform, Kind::Film, 1), "Films", kind == Kind::Film, ""))
-                                .child(tab(url(platform, Kind::Serie, 1), "Séries", kind == Kind::Serie, "")),
+                                .children(Platform::ALL.into_iter().map(|p| {
+                                    tab(
+                                        url(p, kind, 1),
+                                        p.label(),
+                                        p == platform,
+                                        &format!("chip-{}", p.slug()),
+                                    )
+                                })),
+                        )
+                        .child(
+                            div()
+                                .class("chips")
+                                .child(tab(
+                                    url(platform, Kind::Film, 1),
+                                    "Films",
+                                    kind == Kind::Film,
+                                    "",
+                                ))
+                                .child(tab(
+                                    url(platform, Kind::Serie, 1),
+                                    "Séries",
+                                    kind == Kind::Serie,
+                                    "",
+                                )),
                         ),
                     )
-                    .child(ul().class("catalogue-grid").children(titles.iter().map(mini_card)))
+                    .child(
+                        ul().class("catalogue-grid")
+                            .children(titles.iter().map(mini_card)),
+                    )
                     .child(pager),
             )
         }
@@ -686,8 +740,8 @@ pub async fn catalogue(req: Request) -> Page {
                     .class("container")
                     .child(
                         head.child(p().class("muted").text(
-                            "Les films et séries que CineShuffle connaît hors ligne. Sur le site hébergé, avec TMDB, \
-                             le tirage et le catalogue couvrent tout ce que proposent les plateformes.",
+                            "Les films et séries que CineShuffle connaît hors ligne. Sur le site hébergé, le tirage et le \
+                             catalogue couvrent tous les titres que Wikidata associe aux plateformes.",
                         ))
                         .child(div().class("chips").children(Platform::ALL.into_iter().map(|p| {
                             a().class(format!("chip chip-{}", p.slug()))
@@ -802,8 +856,9 @@ pub async fn about(_req: Request) -> Page {
             p().text(
                 "Le site est écrit en Rust avec le framework Paquets : les pages sont rendues par le serveur, \
                  et les parties interactives sont des îlots compilés en WebAssembly. Les films et séries viennent \
-                 de l'API de TMDB : tout le catalogue disponible en France sur chaque plateforme. Il est déployé \
-                 sur Heroku et en version statique sur GitHub Pages.",
+                 de Wikidata (tous les titres associés à chaque plateforme), les résumés et les affiches de \
+                 Wikipédia : des données libres, sans clé ni compte. Il est déployé sur Heroku et en version \
+                 statique sur GitHub Pages.",
             ),
         ],
     );
@@ -842,8 +897,8 @@ pub async fn legal(_req: Request) -> Page {
             h2().text("Données des films et séries"),
             p().text(ATTRIBUTION),
             p().text(
-                "Les affiches et les résumés appartiennent à leurs ayants droit et sont fournis par TMDB. Les résumés \
-                 et les affiches dessinées de la sélection embarquée sont originaux.",
+                "Chaque fiche renvoie à son article Wikipédia. Les affiches restent la propriété de leurs ayants \
+                 droit. Les résumés et les affiches dessinées de la sélection embarquée sont originaux.",
             ),
         ],
     );

@@ -126,6 +126,11 @@ struct TitleCard: View {
                     if let cast = title.castLine {
                         Text(cast).font(.caption).foregroundStyle(.primary)
                     }
+                    if let url = title.linkURL {
+                        Link("Résumé : Wikipédia ↗", destination: url)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Text(title.genreLabels)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -206,7 +211,7 @@ struct PosterView: View {
             )
             GeometryReader { proxy in
                 let size = max(proxy.size.width, proxy.size.height)
-                // L'affiche de TMDB recouvre l'affiche dessinée une fois chargée.
+                // L'affiche de Wikipédia recouvre l'affiche dessinée une fois chargée.
                 ZStack {
                     Circle()
                         .strokeBorder(.white.opacity(0.22), style: StrokeStyle(lineWidth: 2, dash: [6, 6]))

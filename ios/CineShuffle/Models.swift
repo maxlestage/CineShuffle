@@ -79,9 +79,9 @@ struct Genre: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Un film ou une série (le JSON de l'API CineShuffle : TMDB ou sélection embarquée).
+/// Un film ou une série (le JSON de l'API CineShuffle : Wikidata ou sélection embarquée).
 struct Title: Codable, Identifiable, Hashable, Sendable {
-    /// `movie:603`, `tv:1399` (TMDB) ou `local:12` (sélection embarquée).
+    /// `wd:Q83495` (Wikidata) ou `local:12` (sélection embarquée).
     let key: String
     let name: String
     var year: Int?
@@ -89,19 +89,21 @@ struct Title: Codable, Identifiable, Hashable, Sendable {
     var platforms: [Platform] = []
     var genres: [String] = []
     var overview: String = ""
-    /// L'adresse de l'affiche (TMDB).
+    /// L'adresse de l'affiche (Wikipédia).
     var poster: String?
     /// Les acteurs principaux.
     var cast: [String] = []
     var length: String?
     var rating: Double?
+    /// L'article Wikipédia du résumé (crédit CC BY-SA).
+    var link: String?
     let emoji: String
     let hue: Int
 
     var id: String { key }
 
     enum CodingKeys: String, CodingKey {
-        case key, name, year, kind, platforms, genres, overview, poster, cast, length, rating, emoji, hue
+        case key, name, year, kind, platforms, genres, overview, poster, cast, length, rating, link, emoji, hue
     }
 
     init(from decoder: Decoder) throws {
@@ -119,6 +121,7 @@ struct Title: Codable, Identifiable, Hashable, Sendable {
         cast = try c.decodeIfPresent([String].self, forKey: .cast) ?? []
         length = try c.decodeIfPresent(String.self, forKey: .length)
         rating = try c.decodeIfPresent(Double.self, forKey: .rating)
+        link = try c.decodeIfPresent(String.self, forKey: .link)
         emoji = try c.decodeIfPresent(String.self, forKey: .emoji) ?? "🎬"
         hue = try c.decodeIfPresent(Int.self, forKey: .hue) ?? 0
     }
@@ -140,6 +143,8 @@ struct Title: Codable, Identifiable, Hashable, Sendable {
     }
 
     var posterURL: URL? { poster.flatMap(URL.init(string:)) }
+
+    var linkURL: URL? { link.flatMap(URL.init(string:)) }
 
     var platformLabels: String { platforms.map(\.label).joined(separator: ", ") }
 

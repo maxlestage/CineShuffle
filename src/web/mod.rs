@@ -4,7 +4,7 @@ pub mod api;
 pub mod export;
 pub mod pages;
 pub mod source;
-pub mod tmdb;
+pub mod wiki;
 
 use std::sync::RwLock;
 
@@ -106,6 +106,8 @@ fn pwa() -> Pwa {
 /// L'application complète.
 pub fn app() -> App {
     configure_site_url();
+    // Le catalogue Wikidata enregistré (au déploiement, ou au dernier rechargement).
+    wiki::load_default_file();
     let mut app = App::new();
     // Un site sur une autre origine (GitHub Pages) peut appeler l'API :
     // CORS_ORIGINS=https://maxlestage.github.io (plusieurs : séparées par des virgules).
@@ -221,8 +223,8 @@ mod tests {
         assert_eq!(client.get("/api/titles/local:999").await.status(), 404);
         assert_eq!(client.get("/api/status").await.status(), 200);
 
-        // Sans clé TMDB, le tirage se fait dans la sélection embarquée.
-        if tmdb::client().is_none() {
+        // Sans Wikidata, le tirage se fait dans la sélection embarquée.
+        if wiki::current().is_none() {
             let picks = client
                 .get("/api/picks?platform=prime-video&kind=film&seed=7")
                 .await;
@@ -249,7 +251,7 @@ mod tests {
             .await;
         client
             .post("/api/votes")
-            .json(&json!({ "title": "movie:603", "liked": true }))
+            .json(&json!({ "title": "wd:Q83495", "liked": true }))
             .await;
         let stats = client.get("/api/votes/stats").await.text();
         assert!(
@@ -257,7 +259,7 @@ mod tests {
             "{stats}"
         );
         assert!(
-            stats.contains(r#"{"title":"movie:603","likes":1,"dislikes":0}"#),
+            stats.contains(r#"{"title":"wd:Q83495","likes":1,"dislikes":0}"#),
             "{stats}"
         );
         assert_eq!(
@@ -269,7 +271,7 @@ mod tests {
             404
         );
 
-        if tmdb::client().is_none() {
+        if wiki::current().is_none() {
             let liked = |key: &str| {
                 paquets::serde_json::to_value(
                     cineshuffle::catalog::builtin_title(key).unwrap().seen(),

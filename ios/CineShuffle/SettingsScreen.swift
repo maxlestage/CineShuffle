@@ -30,7 +30,7 @@ struct SettingsScreen: View {
                 }
 
                 Section("Catalogue") {
-                    LabeledContent("Source", value: model.online ? "Tout le catalogue (TMDB)" : "Sélection embarquée")
+                    LabeledContent("Source", value: model.online ? "Tout le catalogue (Wikidata)" : "Sélection embarquée")
                     LabeledContent("Titres hors ligne", value: "\(model.catalog.count)")
                     LabeledContent("Mes votes", value: "\(model.taste.votes.count)")
                 }
@@ -38,7 +38,7 @@ struct SettingsScreen: View {
                 Section("À propos") {
                     Link("Code source", destination: URL(string: "https://github.com/maxlestage/CineShuffle")!)
                     Link("Confidentialité", destination: URL(string: "https://maxlestage.github.io/CineShuffle/confidentialite/")!)
-                    Text("Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB. Disponibilités : JustWatch.")
+                    Text("Catalogue : Wikidata (CC0). Résumés : Wikipédia (CC BY-SA). Affiches : propriété de leurs ayants droit. La disponibilité en France peut varier.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Text("Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; CineShuffle n'est affilié à aucune d'elles.")

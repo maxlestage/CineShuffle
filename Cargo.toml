@@ -20,8 +20,8 @@ path = "src/main.rs"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 paquets = { git = "https://github.com/maxlestage/Paquets", features = ["browser-storage"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-# Les appels à l'API TMDB (catalogue complet, affiches, résumés, acteurs).
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "json", "query", "system-proxy"] }
+# Les appels à Wikidata et Wikipédia (catalogue complet, affiches, résumés, acteurs).
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "json", "system-proxy"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false, features = ["client", "browser-storage"] }
