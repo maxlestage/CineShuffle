@@ -1,0 +1,24 @@
+{
+  "name": "ReelPick",
+  "description": "5 films et séries tirés au sort sur Netflix, HBO Max et Disney+, des votes et des suggestions selon vos goûts. Écrit en Rust avec Paquets.",
+  "repository": "https://github.com/maxlestage/ReelPick",
+  "logo": "https://raw.githubusercontent.com/maxlestage/ReelPick/master/public/icons/icon-192.png",
+  "keywords": ["rust", "paquets", "wasm", "pwa", "films", "series"],
+  "stack": "heroku-26",
+  "buildpacks": [
+    {
+      "url": "emk/rust"
+    }
+  ],
+  "env": {
+    "REPOS_TOKEN": {
+      "description": "Un jeton GitHub (lecture seule) si les dépôts de Paquets sont privés ; laissez vide sinon.",
+      "required": false
+    },
+    "SITE_URL": {
+      "description": "L'adresse publique de l'application (balises canoniques, sitemap), par exemple https://mon-app.herokuapp.com",
+      "required": false
+    }
+  },
+  "success_url": "/"
+}

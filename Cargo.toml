@@ -1,0 +1,49 @@
+[package]
+name = "reelpick"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.95"
+description = "ReelPick : 5 films et séries tirés au sort sur Netflix, HBO Max et Disney+, des votes et des suggestions selon vos goûts."
+authors = ["Maxime Nathan Lestage"]
+publish = false
+default-run = "reelpick"
+
+# Une crate, deux cibles : le serveur (src/main.rs) et, compilés en WebAssembly,
+# les îlots de src/lib.rs (le tirage, les votes, les suggestions).
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "reelpick"
+path = "src/main.rs"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+paquets = { git = "https://github.com/maxlestage/Paquets", features = ["browser-storage"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false, features = ["client", "browser-storage"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+  "Headers",
+  "Request",
+  "RequestInit",
+  "Response",
+  "Window",
+] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+# Le paquet du navigateur : le plus petit possible.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "s"
+lto = true
+panic = "abort"
+# Pas `strip = true` : wasm-bindgen lit la section `target_features`.
+strip = false

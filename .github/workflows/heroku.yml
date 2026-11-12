@@ -1,0 +1,112 @@
+# Déploie master sur Heroku avec le buildpack emk/rust, sans la CLI Heroku : tout
+# passe par l'API Platform de Heroku, donc tout se règle depuis un téléphone.
+#
+# Réglages (GitHub → Settings → Secrets and variables → Actions) :
+#   - secret   HEROKU_API_KEY        Heroku → Account settings → API Key → Reveal
+#   - variable HEROKU_APP_NAME       le nom de l'app (créée si elle n'existe pas)
+#   - variable HEROKU_REGION         facultatif : eu ou us (eu par défaut)
+#   - variable HEROKU_POSTGRES_PLAN  facultatif, ex. essential-0 : garde les votes
+#                                    dans PostgreSQL (sinon en mémoire)
+#   - secret   REPOS_TOKEN           facultatif : si les dépôts de Paquets sont privés
+# Sans HEROKU_API_KEY ou HEROKU_APP_NAME, le déploiement est simplement sauté.
+
+name: Heroku
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: heroku
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Déploiement (buildpack emk/rust)
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+      APP: ${{ vars.HEROKU_APP_NAME }}
+      REGION: ${{ vars.HEROKU_REGION || 'eu' }}
+      POSTGRES_PLAN: ${{ vars.HEROKU_POSTGRES_PLAN }}
+      STACK: heroku-26
+      BUILDPACK: emk/rust
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+      - name: Construire et publier sur Heroku
+        run: |
+          set -euo pipefail
+          if [ -z "${HEROKU_API_KEY:-}" ] || [ -z "${APP:-}" ]; then
+            echo "::notice::Heroku n'est pas configuré : ajoutez le secret HEROKU_API_KEY et la variable HEROKU_APP_NAME (Settings → Secrets and variables → Actions)."
+            exit 0
+          fi
+          api() {
+            curl -fsS -H "Accept: application/vnd.heroku+json; version=3" \
+              -H "Authorization: Bearer $HEROKU_API_KEY" \
+              -H "Content-Type: application/json" "$@"
+          }
+          info="$RUNNER_TEMP/app.json"
+          status=$(curl -sS -o "$info" -w '%{http_code}' \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer $HEROKU_API_KEY" \
+            "https://api.heroku.com/apps/$APP")
+          case "$status" in
+            200) echo "App $APP trouvée." ;;
+            404)
+              echo "Création de l'app $APP ($REGION, $STACK)…"
+              api -X POST https://api.heroku.com/apps \
+                -d "{\"name\":\"$APP\",\"region\":\"$REGION\",\"stack\":\"$STACK\"}" > "$info" ;;
+            401) echo "::error::Heroku refuse la clé d'API (HEROKU_API_KEY)."; exit 1 ;;
+            403) echo "::error::Ce compte Heroku ne peut pas utiliser l'app « $APP » (le nom est peut-être pris)."; exit 1 ;;
+            *) echo "::error::Réponse inattendue de Heroku ($status) : $(cat "$info")"; exit 1 ;;
+          esac
+          if [ "$(jq -r '.build_stack.name' "$info")" != "$STACK" ]; then
+            echo "Pile $STACK…"
+            api -X PATCH "https://api.heroku.com/apps/$APP" -d "{\"build_stack\":\"$STACK\"}" > /dev/null
+          fi
+          echo "Buildpack $BUILDPACK…"
+          api -X PUT "https://api.heroku.com/apps/$APP/buildpack-installations" \
+            -d "{\"updates\":[{\"buildpack\":\"$BUILDPACK\"}]}" > /dev/null
+
+          web_url=$(api "https://api.heroku.com/apps/$APP" | jq -r '.web_url')
+          config=$(jq -n --arg site "${web_url%/}" '{SITE_URL: $site}')
+          if [ -n "${REPOS_TOKEN:-}" ]; then
+            config=$(jq --arg token "$REPOS_TOKEN" '. + {REPOS_TOKEN: $token}' <<< "$config")
+          fi
+          api -X PATCH "https://api.heroku.com/apps/$APP/config-vars" -d "$config" > /dev/null
+
+          if [ -n "${POSTGRES_PLAN:-}" ]; then
+            if ! api "https://api.heroku.com/apps/$APP/addons" | jq -e '.[] | select(.addon_service.name == "heroku-postgresql")' > /dev/null; then
+              echo "Ajout de PostgreSQL ($POSTGRES_PLAN)…"
+              api -X POST "https://api.heroku.com/apps/$APP/addons" \
+                -d "{\"plan\":\"heroku-postgresql:$POSTGRES_PLAN\"}" > /dev/null
+            fi
+          fi
+
+          git archive --format=tar.gz -o "$RUNNER_TEMP/source.tgz" HEAD
+          sources=$(api -X POST https://api.heroku.com/sources)
+          curl -fsS -X PUT -H "Content-Type:" --data-binary @"$RUNNER_TEMP/source.tgz" \
+            "$(jq -r '.source_blob.put_url' <<< "$sources")"
+
+          echo "Compilation sur Heroku (la première prend plusieurs minutes)…"
+          build=$(api -X POST "https://api.heroku.com/apps/$APP/builds" \
+            -d "{\"source_blob\":{\"url\":\"$(jq -r '.source_blob.get_url' <<< "$sources")\",\"version\":\"$GITHUB_SHA\"}}")
+          id=$(jq -r '.id' <<< "$build")
+          curl -sSN "$(jq -r '.output_stream_url' <<< "$build")" || true
+
+          result=pending
+          for _ in $(seq 1 360); do
+            result=$(api "https://api.heroku.com/apps/$APP/builds/$id" | jq -r '.status')
+            [ "$result" != "pending" ] && break
+            sleep 5
+          done
+          if [ "$result" != "succeeded" ]; then
+            echo "::error::La compilation Heroku s'est terminée avec le statut « $result »."
+            exit 1
+          fi
+          echo "### 🚀 Déployé sur [$web_url]($web_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Déployé : $web_url"
