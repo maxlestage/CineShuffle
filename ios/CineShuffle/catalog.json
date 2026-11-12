@@ -1,0 +1,1643 @@
+[
+  {
+    "key": "local:1",
+    "name": "Stranger Things",
+    "year": 2016,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "sf",
+      "horreur",
+      "aventure"
+    ],
+    "overview": "Une bande d'ados d'Hawkins affronte des créatures venues d'un monde à l'envers.",
+    "poster": null,
+    "cast": [],
+    "length": "5 saisons",
+    "rating": null,
+    "emoji": "👾",
+    "hue": 350
+  },
+  {
+    "key": "local:2",
+    "name": "Mercredi",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "comedie",
+      "mystere",
+      "fantastique"
+    ],
+    "overview": "Mercredi Addams mène l'enquête à Nevermore avec un humour plus noir que ses tresses.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🖤",
+    "hue": 270
+  },
+  {
+    "key": "local:3",
+    "name": "Squid Game",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "thriller",
+      "drame"
+    ],
+    "overview": "456 joueurs endettés, des jeux d'enfants mortels et un prix colossal.",
+    "poster": null,
+    "cast": [],
+    "length": "3 saisons",
+    "rating": null,
+    "emoji": "🦑",
+    "hue": 330
+  },
+  {
+    "key": "local:4",
+    "name": "The Crown",
+    "year": 2016,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "drame",
+      "historique"
+    ],
+    "overview": "Le règne d'Élisabeth II, des coulisses du palais aux crises de la Couronne.",
+    "poster": null,
+    "cast": [],
+    "length": "6 saisons",
+    "rating": null,
+    "emoji": "👑",
+    "hue": 45
+  },
+  {
+    "key": "local:5",
+    "name": "Lupin",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "policier",
+      "mystere"
+    ],
+    "overview": "Assane Diop venge son père avec l'audace du gentleman cambrioleur.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🎩",
+    "hue": 210
+  },
+  {
+    "key": "local:6",
+    "name": "Dark",
+    "year": 2017,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "sf",
+      "mystere",
+      "drame"
+    ],
+    "overview": "Des disparitions à Winden révèlent un nœud temporel sur quatre générations.",
+    "poster": null,
+    "cast": [],
+    "length": "3 saisons",
+    "rating": null,
+    "emoji": "⏳",
+    "hue": 190
+  },
+  {
+    "key": "local:7",
+    "name": "La casa de papel",
+    "year": 2017,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "policier",
+      "thriller",
+      "action"
+    ],
+    "overview": "Le Professeur et sa bande prennent d'assaut la Fabrique nationale de la monnaie.",
+    "poster": null,
+    "cast": [],
+    "length": "5 parties",
+    "rating": null,
+    "emoji": "🎭",
+    "hue": 0
+  },
+  {
+    "key": "local:8",
+    "name": "Le Jeu de la dame",
+    "year": 2020,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "drame"
+    ],
+    "overview": "Une orpheline prodige des échecs grimpe jusqu'au sommet, entre génie et addictions.",
+    "poster": null,
+    "cast": [],
+    "length": "7 épisodes",
+    "rating": null,
+    "emoji": "♟️",
+    "hue": 30
+  },
+  {
+    "key": "local:9",
+    "name": "Arcane",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "animation",
+      "fantastique",
+      "action"
+    ],
+    "overview": "Deux sœurs séparées entre Piltover et Zaun, dans une animation éblouissante.",
+    "poster": null,
+    "cast": [],
+    "length": "2 saisons",
+    "rating": null,
+    "emoji": "⚙️",
+    "hue": 290
+  },
+  {
+    "key": "local:10",
+    "name": "La Chronique des Bridgerton",
+    "year": 2020,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "romance",
+      "historique",
+      "drame"
+    ],
+    "overview": "Bals, rumeurs et mariages arrangés dans la haute société de la Régence.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "💌",
+    "hue": 320
+  },
+  {
+    "key": "local:11",
+    "name": "Narcos",
+    "year": 2015,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "policier",
+      "drame",
+      "historique"
+    ],
+    "overview": "La traque de Pablo Escobar et des cartels colombiens par la DEA.",
+    "poster": null,
+    "cast": [],
+    "length": "3 saisons",
+    "rating": null,
+    "emoji": "💼",
+    "hue": 80
+  },
+  {
+    "key": "local:12",
+    "name": "BoJack Horseman",
+    "year": 2014,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "animation",
+      "comedie",
+      "drame"
+    ],
+    "overview": "Une star déchue de sitcom (et cheval) cherche un sens à sa vie à Hollywoo.",
+    "poster": null,
+    "cast": [],
+    "length": "6 saisons",
+    "rating": null,
+    "emoji": "🐴",
+    "hue": 20
+  },
+  {
+    "key": "local:13",
+    "name": "Mindhunter",
+    "year": 2017,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "policier",
+      "thriller"
+    ],
+    "overview": "Deux agents du FBI inventent le profilage en interrogeant des tueurs en série.",
+    "poster": null,
+    "cast": [],
+    "length": "2 saisons",
+    "rating": null,
+    "emoji": "🕵️",
+    "hue": 160
+  },
+  {
+    "key": "local:14",
+    "name": "The Irishman",
+    "year": 2019,
+    "kind": "film",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "policier",
+      "drame",
+      "historique"
+    ],
+    "overview": "Scorsese retrace cinquante ans de mafia à travers un tueur à gages vieillissant.",
+    "poster": null,
+    "cast": [],
+    "length": "3 h 29",
+    "rating": null,
+    "emoji": "🥃",
+    "hue": 25
+  },
+  {
+    "key": "local:15",
+    "name": "Glass Onion",
+    "year": 2022,
+    "kind": "film",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "mystere",
+      "comedie",
+      "policier"
+    ],
+    "overview": "Benoit Blanc démêle un meurtre sur l'île privée d'un milliardaire de la tech.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 19",
+    "rating": null,
+    "emoji": "🧅",
+    "hue": 55
+  },
+  {
+    "key": "local:16",
+    "name": "Roma",
+    "year": 2018,
+    "kind": "film",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "drame"
+    ],
+    "overview": "Le quotidien d'une domestique à Mexico au début des années 1970, en noir et blanc.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 15",
+    "rating": null,
+    "emoji": "🎞️",
+    "hue": 220
+  },
+  {
+    "key": "local:17",
+    "name": "Don't Look Up",
+    "year": 2021,
+    "kind": "film",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "comedie",
+      "sf"
+    ],
+    "overview": "Deux astronomes alertent le monde d'une comète tueuse : personne ne veut l'entendre.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 18",
+    "rating": null,
+    "emoji": "☄️",
+    "hue": 15
+  },
+  {
+    "key": "local:18",
+    "name": "Le Problème à 3 corps",
+    "year": 2024,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "sf",
+      "mystere"
+    ],
+    "overview": "Des scientifiques découvrent qu'une civilisation lointaine a les yeux sur la Terre.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🌌",
+    "hue": 240
+  },
+  {
+    "key": "local:19",
+    "name": "Adolescence",
+    "year": 2025,
+    "kind": "serie",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "drame",
+      "policier"
+    ],
+    "overview": "Un garçon de 13 ans est accusé de meurtre : quatre épisodes en plans-séquences.",
+    "poster": null,
+    "cast": [],
+    "length": "4 épisodes",
+    "rating": null,
+    "emoji": "🎥",
+    "hue": 200
+  },
+  {
+    "key": "local:20",
+    "name": "KPop Demon Hunters",
+    "year": 2025,
+    "kind": "film",
+    "platforms": [
+      "netflix"
+    ],
+    "genres": [
+      "animation",
+      "fantastique",
+      "action"
+    ],
+    "overview": "Un groupe de K-pop chasse les démons entre deux concerts à guichets fermés.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 40",
+    "rating": null,
+    "emoji": "🎤",
+    "hue": 300
+  },
+  {
+    "key": "local:21",
+    "name": "Succession",
+    "year": 2018,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "drame",
+      "comedie"
+    ],
+    "overview": "Les enfants Roy se déchirent pour l'héritage d'un empire médiatique.",
+    "poster": null,
+    "cast": [],
+    "length": "4 saisons",
+    "rating": null,
+    "emoji": "📈",
+    "hue": 40
+  },
+  {
+    "key": "local:22",
+    "name": "The Last of Us",
+    "year": 2023,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "drame",
+      "horreur",
+      "aventure"
+    ],
+    "overview": "Joel escorte Ellie à travers une Amérique ravagée par un champignon.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🍄",
+    "hue": 100
+  },
+  {
+    "key": "local:23",
+    "name": "Game of Thrones",
+    "year": 2011,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "fantastique",
+      "drame",
+      "action"
+    ],
+    "overview": "Les grandes maisons de Westeros se disputent le Trône de fer, l'hiver arrive.",
+    "poster": null,
+    "cast": [],
+    "length": "8 saisons",
+    "rating": null,
+    "emoji": "🐉",
+    "hue": 10
+  },
+  {
+    "key": "local:24",
+    "name": "House of the Dragon",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "fantastique",
+      "drame"
+    ],
+    "overview": "Deux cents ans avant Game of Thrones, les Targaryen s'entre-déchirent.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🔥",
+    "hue": 5
+  },
+  {
+    "key": "local:25",
+    "name": "Sur écoute (The Wire)",
+    "year": 2002,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "policier",
+      "drame"
+    ],
+    "overview": "Baltimore vue par ses flics, ses dealers, ses dockers, ses élus et ses écoles.",
+    "poster": null,
+    "cast": [],
+    "length": "5 saisons",
+    "rating": null,
+    "emoji": "🚨",
+    "hue": 215
+  },
+  {
+    "key": "local:26",
+    "name": "Les Soprano",
+    "year": 1999,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "policier",
+      "drame"
+    ],
+    "overview": "Tony Soprano, parrain du New Jersey, consulte une psy pour ses crises d'angoisse.",
+    "poster": null,
+    "cast": [],
+    "length": "6 saisons",
+    "rating": null,
+    "emoji": "🍝",
+    "hue": 355
+  },
+  {
+    "key": "local:27",
+    "name": "Chernobyl",
+    "year": 2019,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "drame",
+      "historique"
+    ],
+    "overview": "La catastrophe de 1986 et ceux qui ont tout sacrifié pour la contenir.",
+    "poster": null,
+    "cast": [],
+    "length": "5 épisodes",
+    "rating": null,
+    "emoji": "☢️",
+    "hue": 75
+  },
+  {
+    "key": "local:28",
+    "name": "The White Lotus",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "comedie",
+      "drame",
+      "mystere"
+    ],
+    "overview": "Une semaine dans un palace de luxe, des clients odieux et un cadavre.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🌺",
+    "hue": 150
+  },
+  {
+    "key": "local:29",
+    "name": "Euphoria",
+    "year": 2019,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "drame"
+    ],
+    "overview": "Rue et ses amis traversent drogues, amour et identité au lycée.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "✨",
+    "hue": 280
+  },
+  {
+    "key": "local:30",
+    "name": "True Detective",
+    "year": 2014,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "policier",
+      "mystere",
+      "thriller"
+    ],
+    "overview": "Des enquêteurs hantés traquent des meurtres rituels, une saison par affaire.",
+    "poster": null,
+    "cast": [],
+    "length": "4 saisons",
+    "rating": null,
+    "emoji": "🔦",
+    "hue": 60
+  },
+  {
+    "key": "local:31",
+    "name": "Barry",
+    "year": 2018,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "comedie",
+      "policier"
+    ],
+    "overview": "Un tueur à gages se découvre une passion pour le théâtre à Los Angeles.",
+    "poster": null,
+    "cast": [],
+    "length": "4 saisons",
+    "rating": null,
+    "emoji": "🎬",
+    "hue": 35
+  },
+  {
+    "key": "local:32",
+    "name": "Mare of Easttown",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "policier",
+      "drame",
+      "mystere"
+    ],
+    "overview": "Une inspectrice de Pennsylvanie enquête sur un meurtre en pleine crise familiale.",
+    "poster": null,
+    "cast": [],
+    "length": "7 épisodes",
+    "rating": null,
+    "emoji": "🧩",
+    "hue": 205
+  },
+  {
+    "key": "local:33",
+    "name": "The Penguin",
+    "year": 2024,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "policier",
+      "drame"
+    ],
+    "overview": "Oz Cobb s'empare de la pègre de Gotham après la chute des Falcone.",
+    "poster": null,
+    "cast": [],
+    "length": "8 épisodes",
+    "rating": null,
+    "emoji": "🐧",
+    "hue": 230
+  },
+  {
+    "key": "local:34",
+    "name": "Frères d'armes",
+    "year": 2001,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "historique",
+      "action",
+      "drame"
+    ],
+    "overview": "La Easy Company, du débarquement en Normandie jusqu'au nid d'aigle d'Hitler.",
+    "poster": null,
+    "cast": [],
+    "length": "10 épisodes",
+    "rating": null,
+    "emoji": "🎖️",
+    "hue": 90
+  },
+  {
+    "key": "local:35",
+    "name": "The Pitt",
+    "year": 2025,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "drame"
+    ],
+    "overview": "Quinze heures de garde aux urgences de Pittsburgh, une heure par épisode.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🏥",
+    "hue": 180
+  },
+  {
+    "key": "local:36",
+    "name": "Dune : Deuxième partie",
+    "year": 2024,
+    "kind": "film",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "sf",
+      "aventure"
+    ],
+    "overview": "Paul Atréides rejoint les Fremen d'Arrakis et marche vers son destin.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 46",
+    "rating": null,
+    "emoji": "🏜️",
+    "hue": 38
+  },
+  {
+    "key": "local:37",
+    "name": "The Batman",
+    "year": 2022,
+    "kind": "film",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "action",
+      "policier"
+    ],
+    "overview": "Un Batman détective traque l'Homme-Mystère dans un Gotham poisseux.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 56",
+    "rating": null,
+    "emoji": "🦇",
+    "hue": 0
+  },
+  {
+    "key": "local:38",
+    "name": "Barbie",
+    "year": 2023,
+    "kind": "film",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "comedie",
+      "fantastique"
+    ],
+    "overview": "Barbie quitte Barbieland pour le monde réel et ses questions existentielles.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 54",
+    "rating": null,
+    "emoji": "🎀",
+    "hue": 325
+  },
+  {
+    "key": "local:39",
+    "name": "Mad Max: Fury Road",
+    "year": 2015,
+    "kind": "film",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "action",
+      "sf"
+    ],
+    "overview": "Une course-poursuite furieuse à travers un désert post-apocalyptique.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 00",
+    "rating": null,
+    "emoji": "🛞",
+    "hue": 28
+  },
+  {
+    "key": "local:40",
+    "name": "Hacks",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "hbo-max"
+    ],
+    "genres": [
+      "comedie"
+    ],
+    "overview": "Une légende du stand-up de Las Vegas et une jeune autrice que tout oppose.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🎙️",
+    "hue": 50
+  },
+  {
+    "key": "local:41",
+    "name": "The Mandalorian",
+    "year": 2019,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "sf",
+      "aventure",
+      "action"
+    ],
+    "overview": "Un chasseur de primes solitaire protège un mystérieux enfant de la Force.",
+    "poster": null,
+    "cast": [],
+    "length": "3 saisons",
+    "rating": null,
+    "emoji": "🪖",
+    "hue": 35
+  },
+  {
+    "key": "local:42",
+    "name": "Andor",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "sf",
+      "thriller",
+      "drame"
+    ],
+    "overview": "Cassian Andor, petit voleur, devient l'un des premiers rebelles contre l'Empire.",
+    "poster": null,
+    "cast": [],
+    "length": "2 saisons",
+    "rating": null,
+    "emoji": "🛰️",
+    "hue": 195
+  },
+  {
+    "key": "local:43",
+    "name": "Loki",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "fantastique",
+      "sf",
+      "aventure"
+    ],
+    "overview": "Le dieu de la malice, arrêté par le TVA, répare le temps qu'il a brisé.",
+    "poster": null,
+    "cast": [],
+    "length": "2 saisons",
+    "rating": null,
+    "emoji": "🌀",
+    "hue": 110
+  },
+  {
+    "key": "local:44",
+    "name": "The Bear",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "comedie",
+      "drame"
+    ],
+    "overview": "Un chef étoilé reprend la sandwicherie familiale de Chicago, dans le chaos.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🍳",
+    "hue": 20
+  },
+  {
+    "key": "local:45",
+    "name": "Shōgun",
+    "year": 2024,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "historique",
+      "drame"
+    ],
+    "overview": "Au Japon de 1600, un navigateur anglais se retrouve au cœur d'une guerre de clans.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "⚔️",
+    "hue": 355
+  },
+  {
+    "key": "local:46",
+    "name": "Only Murders in the Building",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "comedie",
+      "mystere",
+      "policier"
+    ],
+    "overview": "Trois voisins fans de true crime lancent leur podcast sur un meurtre dans leur immeuble.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🏙️",
+    "hue": 25
+  },
+  {
+    "key": "local:47",
+    "name": "WandaVision",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "fantastique",
+      "comedie",
+      "mystere"
+    ],
+    "overview": "Wanda et Vision vivent une sitcom parfaite… trop parfaite pour être vraie.",
+    "poster": null,
+    "cast": [],
+    "length": "9 épisodes",
+    "rating": null,
+    "emoji": "📺",
+    "hue": 340
+  },
+  {
+    "key": "local:48",
+    "name": "Percy Jackson et les Olympiens",
+    "year": 2023,
+    "kind": "serie",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "fantastique",
+      "aventure",
+      "famille"
+    ],
+    "overview": "Un ado découvre qu'il est le fils de Poséidon et part en quête à travers l'Amérique.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🔱",
+    "hue": 185
+  },
+  {
+    "key": "local:49",
+    "name": "Coco",
+    "year": 2017,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "fantastique"
+    ],
+    "overview": "Miguel rêve de musique et se retrouve au Pays des morts pendant la fête des morts.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 45",
+    "rating": null,
+    "emoji": "💀",
+    "hue": 15
+  },
+  {
+    "key": "local:50",
+    "name": "Vice-versa 2",
+    "year": 2024,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "comedie"
+    ],
+    "overview": "Riley a 13 ans et de nouvelles émotions, dont Anxiété, s'installent au QG.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 36",
+    "rating": null,
+    "emoji": "😊",
+    "hue": 265
+  },
+  {
+    "key": "local:51",
+    "name": "Soul",
+    "year": 2020,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "drame"
+    ],
+    "overview": "Un pianiste de jazz se retrouve séparé de son corps à la veille de son grand soir.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 40",
+    "rating": null,
+    "emoji": "🎷",
+    "hue": 235
+  },
+  {
+    "key": "local:52",
+    "name": "Avengers : Endgame",
+    "year": 2019,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "action",
+      "sf",
+      "aventure"
+    ],
+    "overview": "Les Avengers survivants tentent l'impossible pour réparer le claquement de doigts.",
+    "poster": null,
+    "cast": [],
+    "length": "3 h 01",
+    "rating": null,
+    "emoji": "🛡️",
+    "hue": 265
+  },
+  {
+    "key": "local:53",
+    "name": "Black Panther",
+    "year": 2018,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "action",
+      "sf",
+      "aventure"
+    ],
+    "overview": "T'Challa devient roi du Wakanda et doit défendre son trône et son peuple.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 14",
+    "rating": null,
+    "emoji": "🐆",
+    "hue": 275
+  },
+  {
+    "key": "local:54",
+    "name": "Zootopie",
+    "year": 2016,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "comedie",
+      "mystere"
+    ],
+    "overview": "Une lapine policière et un renard arnaqueur enquêtent dans une ville d'animaux.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 48",
+    "rating": null,
+    "emoji": "🦊",
+    "hue": 30
+  },
+  {
+    "key": "local:55",
+    "name": "Le Roi lion",
+    "year": 1994,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "drame"
+    ],
+    "overview": "Simba, héritier de la terre des lions, doit reprendre la place qui lui revient.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 28",
+    "rating": null,
+    "emoji": "🦁",
+    "hue": 42
+  },
+  {
+    "key": "local:56",
+    "name": "Avatar : La Voie de l'eau",
+    "year": 2022,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "sf",
+      "aventure",
+      "action"
+    ],
+    "overview": "Jake Sully et sa famille trouvent refuge auprès des clans de la mer de Pandora.",
+    "poster": null,
+    "cast": [],
+    "length": "3 h 12",
+    "rating": null,
+    "emoji": "🌊",
+    "hue": 195
+  },
+  {
+    "key": "local:57",
+    "name": "Les Gardiens de la Galaxie Vol. 3",
+    "year": 2023,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "sf",
+      "comedie",
+      "action"
+    ],
+    "overview": "Les Gardiens partent sauver Rocket et affrontent le passé de leur ami.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 30",
+    "rating": null,
+    "emoji": "🦝",
+    "hue": 300
+  },
+  {
+    "key": "local:58",
+    "name": "Rogue One",
+    "year": 2016,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "sf",
+      "action"
+    ],
+    "overview": "Une poignée de rebelles vole les plans de l'Étoile de la mort.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 13",
+    "rating": null,
+    "emoji": "⭐",
+    "hue": 210
+  },
+  {
+    "key": "local:59",
+    "name": "Ratatouille",
+    "year": 2007,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "famille",
+      "comedie"
+    ],
+    "overview": "Un rat qui rêve d'être chef cuisine en secret dans un grand restaurant parisien.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 51",
+    "rating": null,
+    "emoji": "🧀",
+    "hue": 48
+  },
+  {
+    "key": "local:60",
+    "name": "WALL-E",
+    "year": 2008,
+    "kind": "film",
+    "platforms": [
+      "disney-plus"
+    ],
+    "genres": [
+      "animation",
+      "sf",
+      "famille"
+    ],
+    "overview": "Un petit robot nettoyeur, seul sur Terre, tombe amoureux d'une sonde venue de l'espace.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 38",
+    "rating": null,
+    "emoji": "🤖",
+    "hue": 32
+  },
+  {
+    "key": "local:61",
+    "name": "The Boys",
+    "year": 2019,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "comedie",
+      "sf"
+    ],
+    "overview": "Une bande de justiciers sans pouvoirs s'attaque à des super-héros corrompus et adulés.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🦸",
+    "hue": 0
+  },
+  {
+    "key": "local:62",
+    "name": "Fallout",
+    "year": 2024,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "sf",
+      "aventure",
+      "action"
+    ],
+    "overview": "Deux siècles après l'apocalypse nucléaire, Lucy quitte son abri pour la surface.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "☢️",
+    "hue": 95
+  },
+  {
+    "key": "local:63",
+    "name": "Reacher",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "policier",
+      "thriller"
+    ],
+    "overview": "Jack Reacher, ancien enquêteur militaire, débarque en ville et règle les problèmes à sa façon.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "💪",
+    "hue": 215
+  },
+  {
+    "key": "local:64",
+    "name": "Invincible",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "animation",
+      "action",
+      "sf"
+    ],
+    "overview": "Le fils du plus grand super-héros de la Terre découvre ses pouvoirs… et les secrets de son père.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🦺",
+    "hue": 50
+  },
+  {
+    "key": "local:65",
+    "name": "La Fabuleuse Mme Maisel",
+    "year": 2017,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "comedie",
+      "drame",
+      "historique"
+    ],
+    "overview": "Dans le New York des années 1950, une femme au foyer se lance dans le stand-up.",
+    "poster": null,
+    "cast": [],
+    "length": "5 saisons",
+    "rating": null,
+    "emoji": "🎙️",
+    "hue": 330
+  },
+  {
+    "key": "local:66",
+    "name": "Good Omens",
+    "year": 2019,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "fantastique",
+      "comedie"
+    ],
+    "overview": "Un ange et un démon, amis de longue date, tentent d'empêcher la fin du monde.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "😇",
+    "hue": 280
+  },
+  {
+    "key": "local:67",
+    "name": "Les Anneaux de pouvoir",
+    "year": 2022,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "fantastique",
+      "aventure",
+      "drame"
+    ],
+    "overview": "Des milliers d'années avant Le Hobbit, la forge des anneaux et le retour du mal en Terre du Milieu.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "💍",
+    "hue": 40
+  },
+  {
+    "key": "local:68",
+    "name": "Jack Ryan",
+    "year": 2018,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "thriller"
+    ],
+    "overview": "Un analyste de la CIA est propulsé sur le terrain face à des menaces mondiales.",
+    "poster": null,
+    "cast": [],
+    "length": "4 saisons",
+    "rating": null,
+    "emoji": "🕴️",
+    "hue": 205
+  },
+  {
+    "key": "local:69",
+    "name": "Mr. & Mrs. Smith",
+    "year": 2024,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "comedie",
+      "romance"
+    ],
+    "overview": "Deux espions inconnus l'un de l'autre sont mariés pour les besoins de leurs missions.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "💼",
+    "hue": 350
+  },
+  {
+    "key": "local:70",
+    "name": "Gen V",
+    "year": 2023,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "comedie",
+      "sf"
+    ],
+    "overview": "Dans une université pour jeunes super-héros, les élèves découvrent un secret inquiétant.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🎓",
+    "hue": 310
+  },
+  {
+    "key": "local:71",
+    "name": "La Roue du temps",
+    "year": 2021,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "fantastique",
+      "aventure"
+    ],
+    "overview": "Une magicienne guide cinq jeunes gens dont l'un pourrait être le Dragon réincarné.",
+    "poster": null,
+    "cast": [],
+    "length": "3 saisons",
+    "rating": null,
+    "emoji": "🌀",
+    "hue": 255
+  },
+  {
+    "key": "local:72",
+    "name": "Upload",
+    "year": 2020,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "comedie",
+      "sf",
+      "romance"
+    ],
+    "overview": "Après sa mort, un jeune homme est téléversé dans un paradis numérique très commercial.",
+    "poster": null,
+    "cast": [],
+    "length": "4 saisons",
+    "rating": null,
+    "emoji": "☁️",
+    "hue": 190
+  },
+  {
+    "key": "local:73",
+    "name": "Fleabag",
+    "year": 2016,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "comedie",
+      "drame"
+    ],
+    "overview": "Une Londonienne caustique et brisée raconte sa vie en regardant la caméra.",
+    "poster": null,
+    "cast": [],
+    "length": "2 saisons",
+    "rating": null,
+    "emoji": "🦊",
+    "hue": 5
+  },
+  {
+    "key": "local:74",
+    "name": "Citadel",
+    "year": 2023,
+    "kind": "serie",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "thriller",
+      "sf"
+    ],
+    "overview": "Deux anciens agents d'une agence d'espionnage disparue reprennent du service, sans mémoire.",
+    "poster": null,
+    "cast": [],
+    "length": "En cours",
+    "rating": null,
+    "emoji": "🛡️",
+    "hue": 220
+  },
+  {
+    "key": "local:75",
+    "name": "Saltburn",
+    "year": 2023,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "thriller",
+      "drame",
+      "comedie"
+    ],
+    "overview": "Un étudiant d'Oxford est invité à passer l'été dans le domaine extravagant d'un camarade.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 11",
+    "rating": null,
+    "emoji": "🏰",
+    "hue": 140
+  },
+  {
+    "key": "local:76",
+    "name": "Road House",
+    "year": 2024,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "action",
+      "thriller"
+    ],
+    "overview": "Un ancien combattant de l'UFC devient videur dans un bar mal famé des Keys de Floride.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 01",
+    "rating": null,
+    "emoji": "🥊",
+    "hue": 25
+  },
+  {
+    "key": "local:77",
+    "name": "Sound of Metal",
+    "year": 2019,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "drame"
+    ],
+    "overview": "Un batteur de métal perd l'ouïe et doit réapprendre à vivre.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 00",
+    "rating": null,
+    "emoji": "🥁",
+    "hue": 200
+  },
+  {
+    "key": "local:78",
+    "name": "Air",
+    "year": 2023,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "drame",
+      "historique"
+    ],
+    "overview": "Comment Nike a convaincu un jeune Michael Jordan de signer et créé une légende.",
+    "poster": null,
+    "cast": [],
+    "length": "1 h 52",
+    "rating": null,
+    "emoji": "👟",
+    "hue": 30
+  },
+  {
+    "key": "local:79",
+    "name": "The Tomorrow War",
+    "year": 2021,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "sf",
+      "action"
+    ],
+    "overview": "Des soldats du futur recrutent des civils d'aujourd'hui pour une guerre contre des extraterrestres.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 18",
+    "rating": null,
+    "emoji": "👽",
+    "hue": 170
+  },
+  {
+    "key": "local:80",
+    "name": "Being the Ricardos",
+    "year": 2021,
+    "kind": "film",
+    "platforms": [
+      "prime-video"
+    ],
+    "genres": [
+      "drame",
+      "historique",
+      "comedie"
+    ],
+    "overview": "Une semaine décisive dans la vie de Lucille Ball et Desi Arnaz, stars de la télévision.",
+    "poster": null,
+    "cast": [],
+    "length": "2 h 05",
+    "rating": null,
+    "emoji": "📺",
+    "hue": 45
+  }
+]

@@ -1,4 +1,4 @@
-//! `reelpick export <dossier>` : le site en fichiers statiques, pour GitHub Pages.
+//! `cineshuffle export <dossier>` : le site en fichiers statiques, pour GitHub Pages.
 //!
 //! Chaque page vient du serveur lui-même, par le client de test en mémoire de Paquets
 //! (`app.test()`) : le site statique et le site hébergé sont identiques. Sans serveur,
@@ -8,15 +8,29 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use super::pages::{PAGES, not_found_page};
-use super::{app, set_static};
+use super::{app, set_static, source};
 
-/// Écrit le site dans `out`, liens derrière `base` (`""` ou `/ReelPick`), adresses
+/// Le nombre de pages de TMDB (20 titres) gardées par plateforme et par format dans
+/// l'instantané d'un site statique.
+const SNAPSHOT_PAGES: u32 = 5;
+
+/// Écrit le site dans `out`, liens derrière `base` (`""` ou `/CineShuffle`), adresses
 /// absolues sur `site_url`. Renvoie le nombre de fichiers écrits.
 pub async fn export(out: &Path, base: &str, site_url: Option<String>) -> io::Result<usize> {
     let base = base.trim_end_matches('/').to_owned();
     let site_url = site_url
         .or_else(|| (!base.is_empty()).then(|| format!("https://maxlestage.github.io{base}")));
-    set_static(&base, site_url);
+    // Le serveur qu'appelle le site statique (CINESHUFFLE_API_URL, par exemple l'app Heroku) :
+    // tout le catalogue. Sans lui, les îlots tirent dans l'instantané `data/titres.json`.
+    let api = std::env::var("CINESHUFFLE_API_URL")
+        .ok()
+        .map(|u| u.trim().trim_end_matches('/').to_owned())
+        .filter(|u| u.starts_with("https://") || u.starts_with("http://"));
+    // L'instantané d'abord : TMDB est ensuite coupé pendant l'export.
+    let pool = source::snapshot(SNAPSHOT_PAGES).await;
+    println!("{} titres dans l'instantané", pool.len());
+    source::set_pool(pool.clone());
+    set_static(&base, site_url, api);
     if !Path::new("pkg").is_dir() {
         eprintln!("attention : pkg/ manque, les îlots ne seront pas interactifs (voir README.md)");
     }
@@ -48,9 +62,13 @@ pub async fn export(out: &Path, base: &str, site_url: Option<String>) -> io::Res
             with_base(&res.text(), &base).as_bytes(),
         )?;
     }
+    let missing = not_found_page().await.render();
+    write("404.html", with_base(&missing, &base).as_bytes())?;
     write(
-        "404.html",
-        with_base(&not_found_page().render(), &base).as_bytes(),
+        "/data/titres.json",
+        paquets::serde_json::to_string(&pool)
+            .map_err(io::Error::other)?
+            .as_bytes(),
     )?;
     for file in ["/manifest.webmanifest", "/sw.js"] {
         let res = client.get(file).await;

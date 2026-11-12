@@ -1,1 +1,1 @@
-web: exec target/release/reelpick
+web: exec target/release/cineshuffle

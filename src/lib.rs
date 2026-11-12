@@ -1,42 +1,51 @@
-//! Partagé par le serveur et le navigateur : le catalogue et les îlots.
+//! Partagé par le serveur et le navigateur : le modèle des titres et les îlots.
 //!
 //! Le serveur rend les îlots en HTML (src/main.rs) ; compilé en WebAssembly, ce
 //! fichier les rend interactifs dans le navigateur :
 //!
-//! - `picker` : la sélection de 5 titres, les filtres, le bouton « Mélanger » et les votes ;
-//! - `taste` : dans le pied de page, les préférences et les suggestions personnalisées,
-//!   et le formulaire pour proposer un titre.
+//! - `picker` : la sélection de 5 titres (affiche, résumé, acteurs, année), les
+//!   filtres, le bouton « Mélanger » et les votes ;
+//! - `taste` : dans le pied de page, les préférences, les suggestions personnalisées et
+//!   le formulaire pour proposer un titre.
 //!
-//! Les deux îlots partagent les goûts de la personne (`Taste`) dans un `Store` gardé
-//! dans le `localStorage`, synchronisé entre îlots et onglets.
+//! Les titres viennent de l'API du serveur (tout le catalogue des plateformes, par
+//! TMDB), d'un fichier JSON sur un site statique, ou de la sélection embarquée. Les
+//! goûts de la personne (`Taste`) sont gardés dans un `Store` du `localStorage`,
+//! partagé par les deux îlots et les onglets.
 
 pub mod catalog;
 
-use catalog::{CATALOG, Genre, Kind, PICKS, Platform, Profile, Title, picks, recommend};
+use catalog::{
+    Genre, Kind, PICKS, Platform, Profile, Seen, Suggestion, Title, builtin, builtin_candidates,
+    picks, recommend,
+};
 use paquets::orm::web::Store;
 use paquets::prelude::*;
 
 /// La clé du `Store` des goûts.
-pub const TASTE_STORE: &str = "reelpick-taste";
+pub const TASTE_STORE: &str = "cineshuffle-taste-v2";
+
+/// La raison d'une suggestion populaire.
+pub const POPULAR: &str = "Populaire sur vos plateformes";
 
 /// Un vote : vu, et aimé ou pas.
 #[data]
 #[derive(PartialEq)]
 pub struct Vote {
-    /// L'identifiant du titre.
-    pub title: u32,
+    /// Le titre voté (de quoi le comparer aux autres).
+    pub seen: Seen,
     /// Aimé (`true`) ou pas (`false`).
     pub liked: bool,
 }
 
-/// Un titre proposé par la personne et gardé sur son appareil.
+/// Un titre proposé par la personne.
 #[data]
 #[derive(PartialEq)]
 pub struct Proposal {
     /// Le titre proposé.
     pub title: String,
-    /// La plateforme (`netflix`, `hbo-max`, `disney-plus`).
-    pub platform: String,
+    /// La plateforme.
+    pub platform: Platform,
 }
 
 /// Les goûts d'une personne, gardés dans son navigateur.
@@ -44,73 +53,99 @@ pub struct Proposal {
 #[derive(Default, PartialEq)]
 pub struct Taste {
     /// Ses votes.
+    #[serde(default)]
     pub votes: Vec<Vote>,
-    /// Ses plateformes (identifiants ; vide : toutes).
-    pub platforms: Vec<String>,
-    /// Ses genres préférés (identifiants).
-    pub genres: Vec<String>,
-    /// `film`, `serie` ou vide (les deux).
-    pub kind: String,
+    /// Ses plateformes (vide : toutes).
+    #[serde(default)]
+    pub platforms: Vec<Platform>,
+    /// Ses genres préférés.
+    #[serde(default)]
+    pub genres: Vec<Genre>,
+    /// Films, séries ou les deux (`None`).
+    #[serde(default)]
+    pub kind: Option<Kind>,
     /// Les titres qu'elle a proposés.
+    #[serde(default)]
     pub proposals: Vec<Proposal>,
 }
 
 impl Taste {
-    /// Le vote pour `title`.
-    pub fn vote(&self, title: u32) -> Option<bool> {
+    /// Le vote pour le titre `key`.
+    pub fn vote(&self, key: &str) -> Option<bool> {
         self.votes
             .iter()
-            .find(|v| v.title == title)
+            .find(|v| v.seen.key == key)
             .map(|v| v.liked)
     }
 
-    /// Vote pour `title` ; voter deux fois la même chose retire le vote.
-    pub fn toggle_vote(&mut self, title: u32, liked: bool) -> Option<bool> {
-        let before = self.vote(title);
-        self.votes.retain(|v| v.title != title);
+    /// Vote pour `title` ; voter deux fois la même chose retire le vote. Renvoie le
+    /// vote d'avant et le nouveau.
+    pub fn toggle_vote(&mut self, title: &Title, liked: bool) -> (Option<bool>, Option<bool>) {
+        let before = self.vote(&title.key);
+        self.votes.retain(|v| v.seen.key != title.key);
         if before == Some(liked) {
-            None
+            (before, None)
         } else {
-            self.votes.push(Vote { title, liked });
-            Some(liked)
+            self.votes.push(Vote {
+                seen: title.seen(),
+                liked,
+            });
+            (before, Some(liked))
         }
     }
 
     /// Ajoute ou retire `item` de `list`.
-    pub fn toggle(list: &mut Vec<String>, item: &str) {
-        if let Some(at) = list.iter().position(|x| x == item) {
+    pub fn toggle<T: PartialEq>(list: &mut Vec<T>, item: T) {
+        if let Some(at) = list.iter().position(|x| *x == item) {
             list.remove(at);
         } else {
-            list.push(item.to_owned());
+            list.push(item);
         }
     }
 
     /// Le profil lu par le moteur de suggestions.
     pub fn profile(&self) -> Profile {
+        let pick = |liked: bool| {
+            self.votes
+                .iter()
+                .filter(|v| v.liked == liked)
+                .map(|v| v.seen.clone())
+                .collect()
+        };
         Profile {
-            liked: self
-                .votes
-                .iter()
-                .filter(|v| v.liked)
-                .map(|v| v.title)
-                .collect(),
-            disliked: self
-                .votes
-                .iter()
-                .filter(|v| !v.liked)
-                .map(|v| v.title)
-                .collect(),
-            platforms: self
-                .platforms
-                .iter()
-                .filter_map(|s| Platform::from_slug(s))
-                .collect(),
-            genres: self
-                .genres
-                .iter()
-                .filter_map(|s| Genre::from_slug(s))
-                .collect(),
-            kind: Kind::from_slug(&self.kind),
+            liked: pick(true),
+            disliked: pick(false),
+            platforms: self.platforms.clone(),
+            genres: self.genres.clone(),
+            kind: self.kind,
+        }
+    }
+}
+
+/// D'où les îlots tirent leurs titres.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Source {
+    /// L'API du serveur CineShuffle (son adresse, `""` pour le même site).
+    Api(String),
+    /// Un fichier JSON de titres (site statique).
+    Pool(String),
+    /// La sélection embarquée.
+    Builtin,
+}
+
+impl Source {
+    fn new(api: Option<String>, pool: Option<String>) -> Source {
+        match (api, pool) {
+            (Some(api), _) => Source::Api(api),
+            (None, Some(pool)) => Source::Pool(pool),
+            (None, None) => Source::Builtin,
+        }
+    }
+
+    fn api(&self) -> Option<&str> {
+        match self {
+            Source::Api(base) => Some(base),
+            _ => None,
         }
     }
 }
@@ -119,26 +154,32 @@ impl Taste {
 #[data]
 #[derive(Default)]
 pub struct PickerProps {
-    /// La graine du tirage (la sélection du jour).
-    pub seed: u64,
-    /// L'adresse de l'API (`""` : le même site), ou `None` sans serveur (GitHub Pages).
+    /// Les titres tirés par le serveur (la sélection du jour).
+    pub picks: Vec<Title>,
+    /// L'adresse de l'API (`""` : le même site), ou `None` sans serveur.
     pub api: Option<String>,
+    /// L'adresse du fichier de titres d'un site statique.
+    pub pool: Option<String>,
 }
 
 /// Les props de l'îlot `taste`, en JSON.
 #[data]
 #[derive(Default)]
 pub struct TasteProps {
+    /// Les suggestions de départ (sans vote ni préférence).
+    pub suggestions: Vec<Suggestion>,
     /// L'adresse de l'API, ou `None` sans serveur.
     pub api: Option<String>,
+    /// L'adresse du fichier de titres d'un site statique.
+    pub pool: Option<String>,
 }
 
 /// Les votes de la communauté pour un titre (réponse de `GET /api/votes/stats`).
 #[data]
 #[derive(PartialEq)]
 pub struct Stat {
-    /// L'identifiant du titre.
-    pub title: u32,
+    /// La clé du titre.
+    pub title: String,
     /// Les « aimé ».
     pub likes: u32,
     /// Les « pas aimé ».
@@ -173,85 +214,127 @@ fn chip(label: impl Into<String>, pressed: impl Fn() -> bool + 'static) -> Eleme
         .text(label.into())
 }
 
-/// L'affiche 2D d'un titre : un dégradé, un emoji et des formes animées.
+/// L'affiche d'un titre : l'image de TMDB, sur une affiche dessinée en 2D (dégradé,
+/// anneaux animés, emoji) qui sert aussi quand il n'y a pas d'image.
 pub fn poster(t: &Title) -> Element {
     div()
         .class("poster")
-        .attr("aria-hidden", "true")
         .style(format!("--hue:{}", t.hue))
-        .child(span().class("poster-ring"))
-        .child(span().class("poster-ring poster-ring-2"))
-        .child(span().class("poster-emoji").text(t.emoji))
+        .child(span().class("poster-ring").attr("aria-hidden", "true"))
         .child(
             span()
-                .class(format!("platform-badge {}", t.platform.slug()))
-                .text(t.platform.label()),
+                .class("poster-ring poster-ring-2")
+                .attr("aria-hidden", "true"),
+        )
+        .child(
+            span()
+                .class("poster-emoji")
+                .attr("aria-hidden", "true")
+                .text(t.emoji.clone()),
+        )
+        .child(t.poster.as_ref().map(|src| {
+            img()
+                .class("poster-img")
+                .attr("src", src.clone())
+                .attr("alt", format!("Affiche : {}", t.name))
+                .attr("loading", "lazy")
+                .attr("decoding", "async")
+        }))
+        .child(
+            div()
+                .class("platform-badges")
+                .children(t.platforms.iter().map(|p| {
+                    span()
+                        .class(format!("platform-badge {}", p.slug()))
+                        .text(p.label())
+                })),
         )
 }
 
 /// Une carte de la sélection, avec ses boutons de vote.
 fn card(
-    t: &'static Title,
+    t: Title,
     index: usize,
     taste: State<Taste>,
     stats: State<Vec<Stat>>,
     api: Option<String>,
 ) -> Node {
-    let id = t.id;
-    let vote_button = move |liked: bool| {
-        let api = api.clone();
-        button()
-            .attr("type", "button")
-            .class(if liked {
-                "vote vote-up"
-            } else {
-                "vote vote-down"
-            })
-            .attr(
-                "aria-label",
-                format!(
-                    "{} : {}",
-                    if liked {
-                        "Vu et aimé"
-                    } else {
-                        "Vu, pas aimé"
-                    },
-                    t.name
-                ),
-            )
-            .attr_dyn("aria-pressed", move || {
-                taste.with(|s| s.vote(id) == Some(liked)).to_string()
-            })
-            .on_click(move |_| {
-                let before = taste.with(|s| s.vote(id));
-                let now = update_taste(|s| s.toggle_vote(id, liked));
-                // Les votes de la communauté n'existent qu'avec le serveur.
-                if let Some(base) = &api {
-                    stats.update(|all| apply_vote(all, id, before, now));
-                    send_vote(base, id, before, now);
-                }
-            })
-            .child(
-                span()
-                    .class("vote-icon")
-                    .text(if liked { "👍" } else { "👎" }),
-            )
-            .child(span().text(if liked { "Aimé" } else { "Pas aimé" }))
+    let key = t.key.clone();
+    let vote_button = {
+        let t = t.clone();
+        move |liked: bool| {
+            let api = api.clone();
+            let title = t.clone();
+            let key = t.key.clone();
+            let pressed_key = key.clone();
+            button()
+                .attr("type", "button")
+                .class(if liked {
+                    "vote vote-up"
+                } else {
+                    "vote vote-down"
+                })
+                .attr(
+                    "aria-label",
+                    format!(
+                        "{} : {}",
+                        if liked {
+                            "Vu et aimé"
+                        } else {
+                            "Vu, pas aimé"
+                        },
+                        t.name
+                    ),
+                )
+                .attr_dyn("aria-pressed", move || {
+                    taste
+                        .with(|s| s.vote(&pressed_key) == Some(liked))
+                        .to_string()
+                })
+                .on_click(move |_| {
+                    let (before, now) = update_taste(|s| s.toggle_vote(&title, liked));
+                    // Les votes de la communauté n'existent qu'avec le serveur.
+                    if let Some(base) = &api {
+                        stats.update(|all| apply_vote(all, &key, before, now));
+                        send_vote(base, &key, before, now);
+                    }
+                })
+                .child(
+                    span()
+                        .class("vote-icon")
+                        .text(if liked { "👍" } else { "👎" }),
+                )
+                .child(span().text(if liked { "Aimé" } else { "Pas aimé" }))
+        }
     };
+    let (liked_key, disliked_key, stat_key) = (key.clone(), key.clone(), key.clone());
     article()
         .class("card")
-        .class_if("is-liked", move || taste.with(|s| s.vote(id) == Some(true)))
+        .class_if("is-liked", move || {
+            taste.with(|s| s.vote(&liked_key) == Some(true))
+        })
         .class_if("is-disliked", move || {
-            taste.with(|s| s.vote(id) == Some(false))
+            taste.with(|s| s.vote(&disliked_key) == Some(false))
         })
         .style(format!("--i:{index};--hue:{}", t.hue))
-        .child(poster(t))
+        .child(poster(&t))
         .child(
             div()
                 .class("card-body")
-                .child(h3().class("card-title").text(t.name))
-                .child(p().class("card-meta").text(t.meta()))
-                .child(p().class("card-pitch").text(t.pitch))
+                .child(h3().class("card-title").text(t.name.clone()))
+                .child(
+                    p().class("card-meta").text(t.meta()).child(
+                        t.rating
+                            .filter(|r| *r > 0.0)
+                            .map(|r| span().class("rating").text(format!(" · ★ {r:.1}"))),
+                    ),
+                )
+                .child(p().class("card-pitch").text(if t.overview.is_empty() {
+                    "Résumé bientôt disponible.".to_owned()
+                } else {
+                    t.overview.clone()
+                }))
+                .child(t.cast_line().map(|c| p().class("card-cast").text(c)))
                 .child(
                     ul().class("tags")
                         .attr("aria-label", "Genres")
@@ -269,7 +352,7 @@ fn card(
                         .child(vote_button(false)),
                 )
                 .child(p().class("community").text_dyn(move || {
-                    stats.with(|all| match all.iter().find(|s| s.title == id) {
+                    stats.with(|all| match all.iter().find(|s| s.title == stat_key) {
                         Some(s) if s.likes + s.dislikes > 0 => {
                             let total = s.likes + s.dislikes;
                             format!(
@@ -287,15 +370,15 @@ fn card(
 }
 
 /// Reporte un vote dans les statistiques affichées, sans attendre le serveur.
-fn apply_vote(all: &mut Vec<Stat>, id: u32, before: Option<bool>, now: Option<bool>) {
-    if !all.iter().any(|s| s.title == id) {
+fn apply_vote(all: &mut Vec<Stat>, key: &str, before: Option<bool>, now: Option<bool>) {
+    if !all.iter().any(|s| s.title == key) {
         all.push(Stat {
-            title: id,
+            title: key.to_owned(),
             likes: 0,
             dislikes: 0,
         });
     }
-    if let Some(s) = all.iter_mut().find(|s| s.title == id) {
+    if let Some(s) = all.iter_mut().find(|s| s.title == key) {
         match before {
             Some(true) => s.likes = s.likes.saturating_sub(1),
             Some(false) => s.dislikes = s.dislikes.saturating_sub(1),
@@ -310,40 +393,66 @@ fn apply_vote(all: &mut Vec<Stat>, id: u32, before: Option<bool>, now: Option<bo
 }
 
 /// L'îlot de la sélection : 5 titres tirés au sort, des filtres, « Mélanger » et les
-/// votes. Les props (`PickerProps`, JSON) donnent la graine du jour.
+/// votes. Les props (`PickerProps`, JSON) donnent les titres du jour.
 pub fn picker(props: &str) -> Node {
     let props: PickerProps = paquets::serde_json::from_str(props).unwrap_or_default();
-    let seed = use_state(props.seed);
-    let platform = use_state(String::new());
-    let kind = use_state(String::new());
+    let source = Source::new(props.api, props.pool);
+    let shown = use_state(props.picks);
+    let platform = use_state(None::<Platform>);
+    let kind = use_state(None::<Kind>);
     let round = use_state(0u32);
+    let loading = use_state(false);
     let taste = use_taste();
     let stats = use_state(Vec::<Stat>::new());
-    let api = props.api.clone();
 
-    if let Some(base) = api.clone() {
+    if let Some(base) = source.api().map(str::to_owned) {
         effect(move || load_stats(&base, stats));
     }
 
-    let platform_chip = move |slug: &'static str, label: &'static str| {
-        chip(label, move || platform.with(|p| p == slug))
-            .class(format!(
-                "chip-{}",
-                if slug.is_empty() { "all" } else { slug }
-            ))
-            .on_click(move |_| {
-                platform.set(slug.to_owned());
-                round.update(|r| *r += 1);
-            })
-    };
-    let kind_chip = move |slug: &'static str, label: &'static str| {
-        chip(label, move || kind.with(|k| k == slug)).on_click(move |_| {
-            kind.set(slug.to_owned());
-            round.update(|r| *r += 1);
-        })
+    let draw = {
+        let source = source.clone();
+        move || {
+            loading.set(true);
+            load_picks(
+                source.clone(),
+                random_seed(),
+                platform.get(),
+                kind.get(),
+                move |titles| {
+                    shown.set(titles);
+                    round.update(|r| *r += 1);
+                    loading.set(false);
+                },
+            );
+        }
     };
 
-    let deck_api = api.clone();
+    let platform_chip = {
+        let draw = draw.clone();
+        move |value: Option<Platform>| {
+            let draw = draw.clone();
+            let label = value.map_or("Toutes", Platform::label);
+            let slug = value.map_or("all", Platform::slug);
+            chip(label, move || platform.get() == value)
+                .class(format!("chip-{slug}"))
+                .on_click(move |_| {
+                    platform.set(value);
+                    draw();
+                })
+        }
+    };
+    let kind_chip = {
+        let draw = draw.clone();
+        move |value: Option<Kind>, label: &'static str| {
+            let draw = draw.clone();
+            chip(label, move || kind.get() == value).on_click(move |_| {
+                kind.set(value);
+                draw();
+            })
+        }
+    };
+
+    let deck_api = source.api().map(str::to_owned);
     section()
         .class("picker")
         .attr("aria-label", "Sélection aléatoire")
@@ -355,37 +464,37 @@ pub fn picker(props: &str) -> Node {
                         .class("chips")
                         .attr("role", "group")
                         .attr("aria-label", "Plateforme")
-                        .child(platform_chip("", "Toutes"))
-                        .children(
-                            Platform::ALL
-                                .into_iter()
-                                .map(move |p| platform_chip(p.slug(), p.label())),
-                        ),
+                        .child(platform_chip(None))
+                        .children(Platform::ALL.into_iter().map(|p| platform_chip(Some(p)))),
                 )
                 .child(
                     div()
                         .class("chips")
                         .attr("role", "group")
                         .attr("aria-label", "Format")
-                        .child(kind_chip("", "Films et séries"))
-                        .child(kind_chip("film", "Films"))
-                        .child(kind_chip("serie", "Séries")),
+                        .child(kind_chip(None, "Films et séries"))
+                        .child(kind_chip(Some(Kind::Film), "Films"))
+                        .child(kind_chip(Some(Kind::Serie), "Séries")),
                 ),
         )
         .child(
             div()
                 .class("deck")
+                .class_if("is-loading", move || loading.get())
                 .attr("aria-live", "polite")
+                .attr_dyn("aria-busy", move || loading.get().to_string())
                 .children_dyn(move || {
-                    let chosen = picks(
-                        seed.get(),
-                        platform.with(|p| Platform::from_slug(p)),
-                        kind.with(|k| Kind::from_slug(k)),
-                        PICKS,
-                    );
                     // Lu pour que chaque tirage recrée les cartes (et rejoue l'animation).
                     let _ = round.get();
-                    chosen
+                    let titles = shown.get();
+                    if titles.is_empty() {
+                        return vec![
+                            p().class("deck-empty")
+                                .text("Aucun titre ne correspond : essayez un autre filtre.")
+                                .into(),
+                        ];
+                    }
+                    titles
                         .into_iter()
                         .enumerate()
                         .map(|(i, t)| card(t, i, taste, stats, deck_api.clone()))
@@ -399,16 +508,19 @@ pub fn picker(props: &str) -> Node {
                     button()
                         .attr("type", "button")
                         .class("btn btn-primary shuffle")
-                        .on_click(move |_| {
-                            seed.set(random_seed(seed.get()));
-                            round.update(|r| *r += 1);
-                        })
+                        .bool_attr("disabled", move || loading.get())
+                        .on_click(move |_| draw())
                         .child(span().class("dice").attr("aria-hidden", "true").text("🎲"))
-                        .child(span().text("Mélanger les 5 titres")),
+                        .child(span().text_dyn(move || {
+                            if loading.get() {
+                                "Tirage en cours…".to_owned()
+                            } else {
+                                "Mélanger les 5 titres".to_owned()
+                            }
+                        })),
                 )
                 .child(p().class("vote-count").text_dyn(move || {
-                    let n = taste.with(|t| t.votes.len());
-                    match n {
+                    match taste.with(|t| t.votes.len()) {
                         0 => {
                             "Votez pour les titres que vous avez vus : vos suggestions s'affinent."
                                 .to_owned()
@@ -421,33 +533,92 @@ pub fn picker(props: &str) -> Node {
         .into()
 }
 
+/// Une suggestion du pied de page.
+fn suggestion_item(i: usize, s: Suggestion) -> Node {
+    let t = &s.title;
+    li().class("suggestion")
+        .style(format!("--i:{i};--hue:{}", t.hue))
+        .child(match &t.poster {
+            Some(src) => Node::from(
+                img()
+                    .class("suggestion-poster")
+                    .attr("src", src.clone())
+                    .attr("alt", "")
+                    .attr("loading", "lazy")
+                    .attr("decoding", "async"),
+            ),
+            None => Node::from(
+                span()
+                    .class("suggestion-emoji")
+                    .attr("aria-hidden", "true")
+                    .text(t.emoji.clone()),
+            ),
+        })
+        .child(
+            div()
+                .class("suggestion-text")
+                .child(strong().text(t.name.clone()))
+                .child(small().text({
+                    let mut parts = vec![t.platform_labels(), t.kind.label().to_owned()];
+                    if let Some(year) = t.year {
+                        parts.push(year.to_string());
+                    }
+                    parts.retain(|p| !p.is_empty());
+                    parts.join(" · ")
+                }))
+                .child(
+                    t.cast_line()
+                        .map(|c| small().class("suggestion-cast").text(c)),
+                )
+                .child(span().class("reason").text(s.reason.clone())),
+        )
+        .into()
+}
+
 /// L'îlot du pied de page : les préférences, les suggestions personnalisées et le
 /// formulaire pour proposer un titre.
 pub fn taste(props: &str) -> Node {
     let props: TasteProps = paquets::serde_json::from_str(props).unwrap_or_default();
+    let source = Source::new(props.api, props.pool);
+    let initial = props.suggestions;
     let taste = use_taste();
+    let suggestions = use_state(initial.clone());
+    let request = use_state(0u32);
     let proposal = use_state(String::new());
     let proposal_platform = use_state("netflix".to_owned());
     let status = use_state(String::new());
-    let api = props.api;
+    let api = source.api().map(str::to_owned);
+
+    // Les suggestions suivent les goûts (dans le navigateur).
+    {
+        let source = source.clone();
+        effect(move || {
+            let current = taste.get();
+            let id = untrack(|| request.get()) + 1;
+            request.set(id);
+            if current == Taste::default() {
+                suggestions.set(initial.clone());
+                return;
+            }
+            load_suggestions(source.clone(), current.profile(), move |found| {
+                if untrack(|| request.get()) == id {
+                    suggestions.set(found);
+                }
+            });
+        });
+    }
 
     let platform_chip = move |p: Platform| {
-        let slug = p.slug();
-        chip(p.label(), move || {
-            taste.with(|t| t.platforms.iter().any(|x| x == slug))
-        })
-        .on_click(move |_| update_taste(|t| Taste::toggle(&mut t.platforms, slug)))
+        chip(p.label(), move || taste.with(|t| t.platforms.contains(&p)))
+            .on_click(move |_| update_taste(|t| Taste::toggle(&mut t.platforms, p)))
     };
     let genre_chip = move |g: Genre| {
-        let slug = g.slug();
-        chip(g.label(), move || {
-            taste.with(|t| t.genres.iter().any(|x| x == slug))
-        })
-        .on_click(move |_| update_taste(|t| Taste::toggle(&mut t.genres, slug)))
+        chip(g.label(), move || taste.with(|t| t.genres.contains(&g)))
+            .on_click(move |_| update_taste(|t| Taste::toggle(&mut t.genres, g)))
     };
-    let kind_chip = move |slug: &'static str, label: &'static str| {
-        chip(label, move || taste.with(|t| t.kind == slug))
-            .on_click(move |_| update_taste(|t| t.kind = slug.to_owned()))
+    let kind_chip = move |value: Option<Kind>, label: &'static str| {
+        chip(label, move || taste.with(|t| t.kind == value))
+            .on_click(move |_| update_taste(|t| t.kind = value))
     };
 
     div()
@@ -471,9 +642,9 @@ pub fn taste(props: &str) -> Node {
                         .child(
                             div()
                                 .class("chips")
-                                .child(kind_chip("", "Les deux"))
-                                .child(kind_chip("film", "Films"))
-                                .child(kind_chip("serie", "Séries")),
+                                .child(kind_chip(None, "Les deux"))
+                                .child(kind_chip(Some(Kind::Film), "Films"))
+                                .child(kind_chip(Some(Kind::Serie), "Séries")),
                         ),
                 )
                 .child(
@@ -494,8 +665,7 @@ pub fn taste(props: &str) -> Node {
                     ol().class("suggestions")
                         .attr("aria-live", "polite")
                         .children_dyn(move || {
-                            let profile = taste.with(Taste::profile);
-                            let found = recommend(&profile, 4);
+                            let found = suggestions.get();
                             if found.is_empty() {
                                 return vec![
                                     li().class("suggestion-empty")
@@ -506,29 +676,7 @@ pub fn taste(props: &str) -> Node {
                             found
                                 .into_iter()
                                 .enumerate()
-                                .map(|(i, s)| {
-                                    li().class("suggestion")
-                                        .style(format!("--i:{i};--hue:{}", s.title.hue))
-                                        .child(
-                                            span()
-                                                .class("suggestion-emoji")
-                                                .attr("aria-hidden", "true")
-                                                .text(s.title.emoji),
-                                        )
-                                        .child(
-                                            div()
-                                                .class("suggestion-text")
-                                                .child(strong().text(s.title.name))
-                                                .child(small().text(format!(
-                                                    "{} · {} · {}",
-                                                    s.title.platform.label(),
-                                                    s.title.kind.label(),
-                                                    s.title.year
-                                                )))
-                                                .child(span().class("reason").text(s.reason.text())),
-                                        )
-                                        .into()
-                                })
+                                .map(|(i, s)| suggestion_item(i, s))
                                 .collect()
                         }),
                 )
@@ -552,18 +700,19 @@ pub fn taste(props: &str) -> Node {
                         status.set("Indiquez un titre (2 caractères au moins).".to_owned());
                         return;
                     }
-                    let platform = proposal_platform.get();
+                    let platform =
+                        Platform::from_slug(&proposal_platform.get()).unwrap_or(Platform::Netflix);
                     update_taste(|t| {
                         t.proposals.push(Proposal {
                             title: title.clone(),
-                            platform: platform.clone(),
+                            platform,
                         })
                     });
                     proposal.set(String::new());
                     match &api {
                         Some(base) => {
                             status.set(format!("Merci ! « {title} » est envoyé à l'équipe."));
-                            send_proposal(base, &title, &platform);
+                            send_proposal(base, &title, platform);
                         }
                         None => status.set(format!(
                             "Merci ! « {title} » est gardé sur cet appareil."
@@ -620,37 +769,74 @@ pub fn taste(props: &str) -> Node {
         .into()
 }
 
-/// Le catalogue complet, pour les tests et l'API.
-pub fn catalog() -> &'static [Title] {
-    CATALOG
+/// Le tirage sans serveur : dans `pool`, ou dans la sélection embarquée.
+pub fn local_picks(
+    pool: Option<&[Title]>,
+    seed: u64,
+    platform: Option<Platform>,
+    kind: Option<Kind>,
+) -> Vec<Title> {
+    picks(pool.unwrap_or(builtin()), seed, platform, kind, PICKS)
+}
+
+/// Les suggestions sans serveur : dans `pool`, ou dans la sélection embarquée.
+pub fn local_suggestions(pool: Option<&[Title]>, profile: &Profile) -> Vec<Suggestion> {
+    match pool {
+        Some(pool) => recommend(pool, profile, 4, POPULAR),
+        None => recommend(
+            &builtin_candidates(),
+            profile,
+            4,
+            "Une valeur sûre du catalogue",
+        ),
+    }
+}
+
+/// L'adresse de `GET /api/picks`.
+pub fn picks_url(base: &str, seed: u64, platform: Option<Platform>, kind: Option<Kind>) -> String {
+    let mut url = format!("{base}/api/picks?seed={seed}");
+    if let Some(p) = platform {
+        url.push_str("&platform=");
+        url.push_str(p.slug());
+    }
+    if let Some(k) = kind {
+        url.push_str("&kind=");
+        url.push_str(k.slug());
+    }
+    url
 }
 
 // ---------------------------------------------------------------------------
 // Navigateur : hasard et requêtes vers l'API.
 // ---------------------------------------------------------------------------
 
-/// Une nouvelle graine, différente de la précédente.
+/// Une nouvelle graine.
 #[cfg(target_arch = "wasm32")]
-fn random_seed(previous: u64) -> u64 {
-    let r = (js_sys::Math::random() * 9_007_199_254_740_991.0) as u64;
-    if r == previous { r.wrapping_add(1) } else { r }
+fn random_seed() -> u64 {
+    (js_sys::Math::random() * 9_007_199_254_740_991.0) as u64
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn random_seed(previous: u64) -> u64 {
-    catalog::Rng::new(previous).next_u64()
+fn random_seed() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0)
 }
 
 #[cfg(target_arch = "wasm32")]
 mod net {
+    use std::cell::RefCell;
+
     use wasm_bindgen::{JsCast, JsValue};
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Headers, Request, RequestInit, Response};
 
-    /// `GET url`, le corps en texte (`None` en cas d'erreur).
-    pub async fn get(url: &str) -> Option<String> {
+    use super::Title;
+
+    async fn send(req: Request) -> Option<String> {
         let window = web_sys::window()?;
-        let res: Response = JsFuture::from(window.fetch_with_str(url))
+        let res: Response = JsFuture::from(window.fetch_with_request(&req))
             .await
             .ok()?
             .dyn_into()
@@ -661,23 +847,104 @@ mod net {
         JsFuture::from(res.text().ok()?).await.ok()?.as_string()
     }
 
-    /// `POST url` avec un corps JSON.
-    pub async fn post(url: &str, json: String) -> Option<()> {
-        let window = web_sys::window()?;
+    /// `GET url`, le corps en texte (`None` en cas d'erreur).
+    pub async fn get(url: &str) -> Option<String> {
+        send(Request::new_with_str(url).ok()?).await
+    }
+
+    /// `POST url` avec un corps JSON ; le corps de la réponse en texte.
+    pub async fn post(url: &str, json: String) -> Option<String> {
         let init = RequestInit::new();
         init.set_method("POST");
         let headers = Headers::new().ok()?;
         headers.set("Content-Type", "application/json").ok()?;
         init.set_headers(&headers);
         init.set_body(&JsValue::from_str(&json));
-        let req = Request::new_with_str_and_init(url, &init).ok()?;
-        let res: Response = JsFuture::from(window.fetch_with_request(&req))
-            .await
-            .ok()?
-            .dyn_into()
-            .ok()?;
-        res.ok().then_some(())
+        send(Request::new_with_str_and_init(url, &init).ok()?).await
     }
+
+    thread_local! {
+        /// Le fichier de titres d'un site statique, chargé une fois.
+        static POOL: RefCell<Option<Vec<Title>>> = const { RefCell::new(None) };
+    }
+
+    /// Les titres du fichier `url` (chargés à la première demande).
+    pub async fn pool(url: &str) -> Option<Vec<Title>> {
+        if let Some(pool) = POOL.with(|p| p.borrow().clone()) {
+            return Some(pool);
+        }
+        let json = get(url).await?;
+        let titles: Vec<Title> = paquets::serde_json::from_str(&json).ok()?;
+        POOL.with(|p| *p.borrow_mut() = Some(titles.clone()));
+        Some(titles)
+    }
+}
+
+/// Tire 5 titres à la source, puis appelle `done` (dans le navigateur).
+#[cfg(target_arch = "wasm32")]
+fn load_picks(
+    source: Source,
+    seed: u64,
+    platform: Option<Platform>,
+    kind: Option<Kind>,
+    done: impl FnOnce(Vec<Title>) + 'static,
+) {
+    wasm_bindgen_futures::spawn_local(async move {
+        let found = match &source {
+            Source::Api(base) => net::get(&picks_url(base, seed, platform, kind))
+                .await
+                .and_then(|json| paquets::serde_json::from_str::<Vec<Title>>(&json).ok()),
+            Source::Pool(url) => net::pool(url)
+                .await
+                .map(|pool| local_picks(Some(&pool), seed, platform, kind)),
+            Source::Builtin => None,
+        };
+        done(found.unwrap_or_else(|| local_picks(None, seed, platform, kind)));
+    });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_picks(
+    _source: Source,
+    seed: u64,
+    platform: Option<Platform>,
+    kind: Option<Kind>,
+    done: impl FnOnce(Vec<Title>) + 'static,
+) {
+    done(local_picks(None, seed, platform, kind));
+}
+
+/// Calcule les suggestions de `profile` à la source, puis appelle `done`.
+#[cfg(target_arch = "wasm32")]
+fn load_suggestions(
+    source: Source,
+    profile: Profile,
+    done: impl FnOnce(Vec<Suggestion>) + 'static,
+) {
+    wasm_bindgen_futures::spawn_local(async move {
+        let found = match &source {
+            Source::Api(base) => {
+                let body = paquets::serde_json::to_string(&profile).unwrap_or_default();
+                net::post(&format!("{base}/api/recommendations"), body)
+                    .await
+                    .and_then(|json| paquets::serde_json::from_str::<Vec<Suggestion>>(&json).ok())
+            }
+            Source::Pool(url) => net::pool(url)
+                .await
+                .map(|pool| local_suggestions(Some(&pool), &profile)),
+            Source::Builtin => None,
+        };
+        done(found.unwrap_or_else(|| local_suggestions(None, &profile)));
+    });
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_suggestions(
+    _source: Source,
+    profile: Profile,
+    done: impl FnOnce(Vec<Suggestion>) + 'static,
+) {
+    done(local_suggestions(None, &profile));
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -697,28 +964,28 @@ fn load_stats(base: &str, stats: State<Vec<Stat>>) {
 fn load_stats(_base: &str, _stats: State<Vec<Stat>>) {}
 
 #[cfg(target_arch = "wasm32")]
-fn send_vote(base: &str, id: u32, before: Option<bool>, now: Option<bool>) {
+fn send_vote(base: &str, key: &str, before: Option<bool>, now: Option<bool>) {
     let url = format!("{base}/api/votes");
-    let body = paquets::serde_json::json!({ "title": id, "previous": before, "liked": now });
+    let body = paquets::serde_json::json!({ "title": key, "previous": before, "liked": now });
     wasm_bindgen_futures::spawn_local(async move {
         let _ = net::post(&url, body.to_string()).await;
     });
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn send_vote(_base: &str, _id: u32, _before: Option<bool>, _now: Option<bool>) {}
+fn send_vote(_base: &str, _key: &str, _before: Option<bool>, _now: Option<bool>) {}
 
 #[cfg(target_arch = "wasm32")]
-fn send_proposal(base: &str, title: &str, platform: &str) {
+fn send_proposal(base: &str, title: &str, platform: Platform) {
     let url = format!("{base}/api/proposals");
-    let body = paquets::serde_json::json!({ "title": title, "platform": platform });
+    let body = paquets::serde_json::json!({ "title": title, "platform": platform.slug() });
     wasm_bindgen_futures::spawn_local(async move {
         let _ = net::post(&url, body.to_string()).await;
     });
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn send_proposal(_base: &str, _title: &str, _platform: &str) {}
+fn send_proposal(_base: &str, _title: &str, _platform: Platform) {}
 
 /// Le point d'entrée du navigateur : rend interactifs les îlots de la page.
 #[cfg(target_arch = "wasm32")]
@@ -730,27 +997,29 @@ pub fn start() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use catalog::builtin_title;
 
     #[test]
     fn votes_toggle() {
+        let title = builtin_title("local:3").unwrap();
         let mut t = Taste::default();
-        assert_eq!(t.toggle_vote(3, true), Some(true));
-        assert_eq!(t.vote(3), Some(true));
-        assert_eq!(t.toggle_vote(3, false), Some(false));
+        assert_eq!(t.toggle_vote(title, true), (None, Some(true)));
+        assert_eq!(t.vote("local:3"), Some(true));
+        assert_eq!(t.toggle_vote(title, false), (Some(true), Some(false)));
         assert_eq!(t.votes.len(), 1);
-        assert_eq!(t.toggle_vote(3, false), None);
+        assert_eq!(t.toggle_vote(title, false), (Some(false), None));
         assert!(t.votes.is_empty());
     }
 
     #[test]
     fn stats_follow_the_votes() {
         let mut all = Vec::new();
-        apply_vote(&mut all, 1, None, Some(true));
-        apply_vote(&mut all, 1, Some(true), Some(false));
+        apply_vote(&mut all, "movie:1", None, Some(true));
+        apply_vote(&mut all, "movie:1", Some(true), Some(false));
         assert_eq!(
             all,
             vec![Stat {
-                title: 1,
+                title: "movie:1".into(),
                 likes: 0,
                 dislikes: 1
             }]
@@ -759,14 +1028,24 @@ mod tests {
 
     #[test]
     fn islands_render_on_the_server() {
-        let props = r#"{"seed":1,"api":null}"#;
-        let html = picker(props).render();
-        let expected = picks(1, None, None, PICKS);
-        for t in expected {
-            assert!(
-                html.contains(t.name.replace('\'', "&#x27;").as_str()) || html.contains(t.name)
-            );
-        }
+        let picks = local_picks(None, 1, None, None);
+        let props = paquets::serde_json::to_string(&PickerProps {
+            picks: picks.clone(),
+            api: None,
+            pool: None,
+        })
+        .unwrap();
+        let html = picker(&props).render();
+        assert!(html.contains("Mélanger les 5 titres"));
+        assert_eq!(html.matches("class=\"card\"").count(), 5);
         assert!(taste("{}").render().contains("Suggestions pour vous"));
+    }
+
+    #[test]
+    fn urls() {
+        assert_eq!(
+            picks_url("", 3, Some(Platform::PrimeVideo), Some(Kind::Serie)),
+            "/api/picks?seed=3&platform=prime-video&kind=serie"
+        );
     }
 }

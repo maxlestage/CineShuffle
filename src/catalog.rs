@@ -1,32 +1,50 @@
-//! Le catalogue, le tirage au sort et le moteur de suggestions.
+//! Le modèle des titres, le tirage au sort et le moteur de suggestions.
 //!
-//! Ce module est compilé deux fois : dans le serveur (pages, API JSON) et dans le
-//! paquet WebAssembly des îlots. Le même tirage (`picks`) avec la même graine donne
-//! donc exactement les mêmes titres des deux côtés.
+//! Compilé deux fois : dans le serveur et dans le paquet WebAssembly des îlots. Les
+//! titres viennent de TMDB (tout le catalogue des plateformes, avec affiches, résumés et
+//! acteurs : voir `src/web/tmdb.rs`), ou, sans clé TMDB, de la sélection embarquée de
+//! 80 titres ci-dessous, qui sert aussi de secours hors ligne.
 
 use std::fmt;
+use std::sync::OnceLock;
+
+use paquets::data;
+use paquets::serde::{Deserialize, Serialize};
 
 /// Une plateforme de streaming.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(crate = "paquets::serde")]
 pub enum Platform {
     /// Netflix.
+    #[serde(rename = "netflix")]
     Netflix,
-    /// HBO Max.
-    HboMax,
+    /// Prime Video.
+    #[serde(rename = "prime-video")]
+    PrimeVideo,
     /// Disney+.
+    #[serde(rename = "disney-plus")]
     DisneyPlus,
+    /// HBO Max.
+    #[serde(rename = "hbo-max")]
+    HboMax,
 }
 
 impl Platform {
     /// Toutes les plateformes, dans l'ordre d'affichage.
-    pub const ALL: [Platform; 3] = [Platform::Netflix, Platform::HboMax, Platform::DisneyPlus];
+    pub const ALL: [Platform; 4] = [
+        Platform::Netflix,
+        Platform::PrimeVideo,
+        Platform::DisneyPlus,
+        Platform::HboMax,
+    ];
 
-    /// L'identifiant dans les URL et le JSON : `netflix`, `hbo-max`, `disney-plus`.
+    /// L'identifiant dans les URL et le JSON.
     pub fn slug(self) -> &'static str {
         match self {
             Platform::Netflix => "netflix",
-            Platform::HboMax => "hbo-max",
+            Platform::PrimeVideo => "prime-video",
             Platform::DisneyPlus => "disney-plus",
+            Platform::HboMax => "hbo-max",
         }
     }
 
@@ -34,8 +52,9 @@ impl Platform {
     pub fn label(self) -> &'static str {
         match self {
             Platform::Netflix => "Netflix",
-            Platform::HboMax => "HBO Max",
+            Platform::PrimeVideo => "Prime Video",
             Platform::DisneyPlus => "Disney+",
+            Platform::HboMax => "HBO Max",
         }
     }
 
@@ -52,11 +71,14 @@ impl fmt::Display for Platform {
 }
 
 /// Film ou série.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(crate = "paquets::serde")]
 pub enum Kind {
     /// Un long métrage.
+    #[serde(rename = "film")]
     Film,
     /// Une série ou une mini-série.
+    #[serde(rename = "serie")]
     Serie,
 }
 
@@ -88,46 +110,65 @@ impl Kind {
 }
 
 /// Un genre.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(crate = "paquets::serde")]
 pub enum Genre {
     /// Action.
+    #[serde(rename = "action")]
     Action,
     /// Aventure.
+    #[serde(rename = "aventure")]
     Aventure,
     /// Animation.
+    #[serde(rename = "animation")]
     Animation,
     /// Comédie.
+    #[serde(rename = "comedie")]
     Comedie,
     /// Policier.
+    #[serde(rename = "policier")]
     Crime,
+    /// Documentaire.
+    #[serde(rename = "documentaire")]
+    Documentaire,
     /// Drame.
+    #[serde(rename = "drame")]
     Drame,
     /// Famille.
+    #[serde(rename = "famille")]
     Famille,
     /// Fantastique.
+    #[serde(rename = "fantastique")]
     Fantastique,
     /// Historique.
+    #[serde(rename = "historique")]
     Historique,
     /// Horreur.
+    #[serde(rename = "horreur")]
     Horreur,
     /// Mystère.
+    #[serde(rename = "mystere")]
     Mystere,
     /// Romance.
+    #[serde(rename = "romance")]
     Romance,
     /// Science-fiction.
+    #[serde(rename = "sf")]
     Sf,
     /// Thriller.
+    #[serde(rename = "thriller")]
     Thriller,
 }
 
 impl Genre {
     /// Tous les genres, dans l'ordre d'affichage.
-    pub const ALL: [Genre; 14] = [
+    pub const ALL: [Genre; 15] = [
         Genre::Action,
         Genre::Aventure,
         Genre::Animation,
         Genre::Comedie,
         Genre::Crime,
+        Genre::Documentaire,
         Genre::Drame,
         Genre::Famille,
         Genre::Fantastique,
@@ -147,6 +188,7 @@ impl Genre {
             Genre::Animation => "animation",
             Genre::Comedie => "comedie",
             Genre::Crime => "policier",
+            Genre::Documentaire => "documentaire",
             Genre::Drame => "drame",
             Genre::Famille => "famille",
             Genre::Fantastique => "fantastique",
@@ -167,6 +209,7 @@ impl Genre {
             Genre::Animation => "Animation",
             Genre::Comedie => "Comédie",
             Genre::Crime => "Policier",
+            Genre::Documentaire => "Documentaire",
             Genre::Drame => "Drame",
             Genre::Famille => "Famille",
             Genre::Fantastique => "Fantastique",
@@ -179,9 +222,79 @@ impl Genre {
         }
     }
 
+    /// L'emoji d'une affiche sans image, selon le genre.
+    pub fn emoji(self) -> &'static str {
+        match self {
+            Genre::Action => "💥",
+            Genre::Aventure => "🧭",
+            Genre::Animation => "🎨",
+            Genre::Comedie => "😂",
+            Genre::Crime => "🕵️",
+            Genre::Documentaire => "🎥",
+            Genre::Drame => "🎭",
+            Genre::Famille => "👨‍👩‍👧",
+            Genre::Fantastique => "🐉",
+            Genre::Historique => "🏛️",
+            Genre::Horreur => "👻",
+            Genre::Mystere => "🔍",
+            Genre::Romance => "💘",
+            Genre::Sf => "🚀",
+            Genre::Thriller => "🔪",
+        }
+    }
+
     /// Le genre d'un identifiant.
     pub fn from_slug(slug: &str) -> Option<Genre> {
         Genre::ALL.into_iter().find(|g| g.slug() == slug)
+    }
+
+    /// Les genres de CineShuffle d'un genre de TMDB (films et séries).
+    pub fn from_tmdb(id: u32) -> &'static [Genre] {
+        match id {
+            28 => &[Genre::Action],
+            12 | 37 => &[Genre::Aventure],
+            10759 => &[Genre::Action, Genre::Aventure],
+            16 => &[Genre::Animation],
+            35 => &[Genre::Comedie],
+            80 => &[Genre::Crime],
+            99 => &[Genre::Documentaire],
+            18 => &[Genre::Drame],
+            10751 | 10762 => &[Genre::Famille],
+            14 => &[Genre::Fantastique],
+            10765 => &[Genre::Sf, Genre::Fantastique],
+            36 | 10752 | 10768 => &[Genre::Historique],
+            27 => &[Genre::Horreur],
+            9648 => &[Genre::Mystere],
+            10749 => &[Genre::Romance],
+            878 => &[Genre::Sf],
+            53 => &[Genre::Thriller],
+            _ => &[],
+        }
+    }
+
+    /// Le genre TMDB correspondant, pour les films ou les séries (`None` s'il n'existe pas).
+    pub fn tmdb_id(self, kind: Kind) -> Option<u32> {
+        match (self, kind) {
+            (Genre::Action, Kind::Film) => Some(28),
+            (Genre::Aventure, Kind::Film) => Some(12),
+            (Genre::Action | Genre::Aventure, Kind::Serie) => Some(10759),
+            (Genre::Animation, _) => Some(16),
+            (Genre::Comedie, _) => Some(35),
+            (Genre::Crime, _) => Some(80),
+            (Genre::Documentaire, _) => Some(99),
+            (Genre::Drame, _) => Some(18),
+            (Genre::Famille, _) => Some(10751),
+            (Genre::Fantastique, Kind::Film) => Some(14),
+            (Genre::Fantastique | Genre::Sf, Kind::Serie) => Some(10765),
+            (Genre::Historique, Kind::Film) => Some(36),
+            (Genre::Historique, Kind::Serie) => Some(10768),
+            (Genre::Horreur, Kind::Film) => Some(27),
+            (Genre::Mystere, _) => Some(9648),
+            (Genre::Romance, Kind::Film) => Some(10749),
+            (Genre::Sf, Kind::Film) => Some(878),
+            (Genre::Thriller, Kind::Film) => Some(53),
+            _ => None,
+        }
     }
 
     fn bit(self) -> u16 {
@@ -189,35 +302,55 @@ impl Genre {
     }
 }
 
-/// Un film ou une série du catalogue.
-#[derive(Debug, PartialEq, Eq)]
+/// Le masque d'une liste de genres.
+fn mask(genres: &[Genre]) -> u16 {
+    genres.iter().fold(0, |m, g| m | g.bit())
+}
+
+/// Un film ou une série.
+#[data]
+#[derive(PartialEq)]
 pub struct Title {
-    /// L'identifiant, stable (votes, API, application iOS).
-    pub id: u32,
-    /// Le titre français.
-    pub name: &'static str,
+    /// L'identifiant stable : `movie:603` et `tv:1399` (TMDB) ou `local:12` (sélection embarquée).
+    pub key: String,
+    /// Le titre, en français quand il existe.
+    pub name: String,
     /// L'année de sortie.
-    pub year: u16,
+    #[serde(default)]
+    pub year: Option<u16>,
     /// Film ou série.
     pub kind: Kind,
-    /// La plateforme qui le propose (en France, à titre indicatif).
-    pub platform: Platform,
+    /// Les plateformes qui le proposent en France (parmi les quatre de CineShuffle).
+    #[serde(default)]
+    pub platforms: Vec<Platform>,
     /// Ses genres.
-    pub genres: &'static [Genre],
+    #[serde(default)]
+    pub genres: Vec<Genre>,
+    /// Le résumé.
+    #[serde(default)]
+    pub overview: String,
+    /// L'adresse de l'affiche (TMDB), s'il y en a une.
+    #[serde(default)]
+    pub poster: Option<String>,
+    /// Les acteurs principaux.
+    #[serde(default)]
+    pub cast: Vec<String>,
     /// La durée d'un film, ou le nombre de saisons d'une série.
-    pub length: &'static str,
-    /// Le pitch, en une phrase.
-    pub pitch: &'static str,
-    /// L'emoji de l'affiche.
-    pub emoji: &'static str,
-    /// La teinte de l'affiche (0 à 359).
+    #[serde(default)]
+    pub length: Option<String>,
+    /// La note moyenne sur 10 (TMDB).
+    #[serde(default)]
+    pub rating: Option<f32>,
+    /// L'emoji de l'affiche dessinée (quand il n'y a pas d'image).
+    pub emoji: String,
+    /// La teinte de l'affiche dessinée (0 à 359).
     pub hue: u16,
 }
 
 impl Title {
     /// Le masque des genres.
     pub fn genre_mask(&self) -> u16 {
-        self.genres.iter().fold(0, |m, g| m | g.bit())
+        mask(&self.genres)
     }
 
     /// Les genres, séparés par des virgules.
@@ -229,29 +362,97 @@ impl Title {
             .join(", ")
     }
 
+    /// Les plateformes, séparées par des virgules.
+    pub fn platform_labels(&self) -> String {
+        self.platforms
+            .iter()
+            .map(|p| p.label())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     /// `2019 · Film · 2 h 13`.
     pub fn meta(&self) -> String {
-        format!("{} · {} · {}", self.year, self.kind.label(), self.length)
+        let mut parts = Vec::new();
+        if let Some(year) = self.year {
+            parts.push(year.to_string());
+        }
+        parts.push(self.kind.label().to_owned());
+        if let Some(length) = &self.length {
+            parts.push(length.clone());
+        }
+        parts.join(" · ")
     }
+
+    /// `Avec A, B et C`, ou rien sans distribution connue.
+    pub fn cast_line(&self) -> Option<String> {
+        match self.cast.as_slice() {
+            [] => None,
+            [one] => Some(format!("Avec {one}")),
+            [rest @ .., last] => Some(format!("Avec {} et {last}", rest.join(", "))),
+        }
+    }
+
+    /// Ce qu'il faut retenir d'un titre voté.
+    pub fn seen(&self) -> Seen {
+        Seen {
+            key: self.key.clone(),
+            name: self.name.clone(),
+            kind: self.kind,
+            genres: self.genres.clone(),
+            platforms: self.platforms.clone(),
+        }
+    }
+}
+
+/// Une teinte stable pour une clé (les affiches dessinées des titres TMDB sans image).
+pub fn hue_for(key: &str) -> u16 {
+    let hash = key.bytes().fold(0x811c_9dc5_u32, |h, b| {
+        (h ^ u32::from(b)).wrapping_mul(0x0100_0193)
+    });
+    (hash % 360) as u16
+}
+
+/// Ce que le moteur garde d'un titre voté : de quoi comparer les autres titres.
+#[data]
+#[derive(PartialEq)]
+pub struct Seen {
+    /// La clé du titre.
+    pub key: String,
+    /// Son nom.
+    pub name: String,
+    /// Film ou série.
+    pub kind: Kind,
+    /// Ses genres.
+    #[serde(default)]
+    pub genres: Vec<Genre>,
+    /// Ses plateformes.
+    #[serde(default)]
+    pub platforms: Vec<Platform>,
 }
 
 macro_rules! titles {
     ($( $id:literal, $name:literal, $year:literal, $kind:ident, $platform:ident, [$($genre:ident),+], $length:literal, $emoji:literal, $hue:literal, $pitch:literal; )+) => {
-        /// Les 60 titres du catalogue.
-        pub static CATALOG: &[Title] = &[
-            $( Title {
-                id: $id,
-                name: $name,
-                year: $year,
-                kind: Kind::$kind,
-                platform: Platform::$platform,
-                genres: &[$(Genre::$genre),+],
-                length: $length,
-                pitch: $pitch,
-                emoji: $emoji,
-                hue: $hue,
-            }, )+
-        ];
+        /// La sélection embarquée (secours sans clé TMDB, et hors ligne).
+        fn builtin_titles() -> Vec<Title> {
+            vec![
+                $( Title {
+                    key: concat!("local:", $id).to_owned(),
+                    name: $name.to_owned(),
+                    year: Some($year),
+                    kind: Kind::$kind,
+                    platforms: vec![Platform::$platform],
+                    genres: vec![$(Genre::$genre),+],
+                    overview: $pitch.to_owned(),
+                    poster: None,
+                    cast: Vec::new(),
+                    length: Some($length.to_owned()),
+                    rating: None,
+                    emoji: $emoji.to_owned(),
+                    hue: $hue,
+                }, )+
+            ]
+        }
     };
 }
 
@@ -381,15 +582,63 @@ titles! {
         "Un rat qui rêve d'être chef cuisine en secret dans un grand restaurant parisien.";
     60, "WALL-E", 2008, Film, DisneyPlus, [Animation, Sf, Famille], "1 h 38", "🤖", 32,
         "Un petit robot nettoyeur, seul sur Terre, tombe amoureux d'une sonde venue de l'espace.";
+
+    // Prime Video
+    61, "The Boys", 2019, Serie, PrimeVideo, [Action, Comedie, Sf], "En cours", "🦸", 0,
+        "Une bande de justiciers sans pouvoirs s'attaque à des super-héros corrompus et adulés.";
+    62, "Fallout", 2024, Serie, PrimeVideo, [Sf, Aventure, Action], "En cours", "☢️", 95,
+        "Deux siècles après l'apocalypse nucléaire, Lucy quitte son abri pour la surface.";
+    63, "Reacher", 2022, Serie, PrimeVideo, [Action, Crime, Thriller], "En cours", "💪", 215,
+        "Jack Reacher, ancien enquêteur militaire, débarque en ville et règle les problèmes à sa façon.";
+    64, "Invincible", 2021, Serie, PrimeVideo, [Animation, Action, Sf], "En cours", "🦺", 50,
+        "Le fils du plus grand super-héros de la Terre découvre ses pouvoirs… et les secrets de son père.";
+    65, "La Fabuleuse Mme Maisel", 2017, Serie, PrimeVideo, [Comedie, Drame, Historique], "5 saisons", "🎙️", 330,
+        "Dans le New York des années 1950, une femme au foyer se lance dans le stand-up.";
+    66, "Good Omens", 2019, Serie, PrimeVideo, [Fantastique, Comedie], "En cours", "😇", 280,
+        "Un ange et un démon, amis de longue date, tentent d'empêcher la fin du monde.";
+    67, "Les Anneaux de pouvoir", 2022, Serie, PrimeVideo, [Fantastique, Aventure, Drame], "En cours", "💍", 40,
+        "Des milliers d'années avant Le Hobbit, la forge des anneaux et le retour du mal en Terre du Milieu.";
+    68, "Jack Ryan", 2018, Serie, PrimeVideo, [Action, Thriller], "4 saisons", "🕴️", 205,
+        "Un analyste de la CIA est propulsé sur le terrain face à des menaces mondiales.";
+    69, "Mr. & Mrs. Smith", 2024, Serie, PrimeVideo, [Action, Comedie, Romance], "En cours", "💼", 350,
+        "Deux espions inconnus l'un de l'autre sont mariés pour les besoins de leurs missions.";
+    70, "Gen V", 2023, Serie, PrimeVideo, [Action, Comedie, Sf], "En cours", "🎓", 310,
+        "Dans une université pour jeunes super-héros, les élèves découvrent un secret inquiétant.";
+    71, "La Roue du temps", 2021, Serie, PrimeVideo, [Fantastique, Aventure], "3 saisons", "🌀", 255,
+        "Une magicienne guide cinq jeunes gens dont l'un pourrait être le Dragon réincarné.";
+    72, "Upload", 2020, Serie, PrimeVideo, [Comedie, Sf, Romance], "4 saisons", "☁️", 190,
+        "Après sa mort, un jeune homme est téléversé dans un paradis numérique très commercial.";
+    73, "Fleabag", 2016, Serie, PrimeVideo, [Comedie, Drame], "2 saisons", "🦊", 5,
+        "Une Londonienne caustique et brisée raconte sa vie en regardant la caméra.";
+    74, "Citadel", 2023, Serie, PrimeVideo, [Action, Thriller, Sf], "En cours", "🛡️", 220,
+        "Deux anciens agents d'une agence d'espionnage disparue reprennent du service, sans mémoire.";
+    75, "Saltburn", 2023, Film, PrimeVideo, [Thriller, Drame, Comedie], "2 h 11", "🏰", 140,
+        "Un étudiant d'Oxford est invité à passer l'été dans le domaine extravagant d'un camarade.";
+    76, "Road House", 2024, Film, PrimeVideo, [Action, Thriller], "2 h 01", "🥊", 25,
+        "Un ancien combattant de l'UFC devient videur dans un bar mal famé des Keys de Floride.";
+    77, "Sound of Metal", 2019, Film, PrimeVideo, [Drame], "2 h 00", "🥁", 200,
+        "Un batteur de métal perd l'ouïe et doit réapprendre à vivre.";
+    78, "Air", 2023, Film, PrimeVideo, [Drame, Historique], "1 h 52", "👟", 30,
+        "Comment Nike a convaincu un jeune Michael Jordan de signer et créé une légende.";
+    79, "The Tomorrow War", 2021, Film, PrimeVideo, [Sf, Action], "2 h 18", "👽", 170,
+        "Des soldats du futur recrutent des civils d'aujourd'hui pour une guerre contre des extraterrestres.";
+    80, "Being the Ricardos", 2021, Film, PrimeVideo, [Drame, Historique, Comedie], "2 h 05", "📺", 45,
+        "Une semaine décisive dans la vie de Lucille Ball et Desi Arnaz, stars de la télévision.";
 }
 
-/// Le titre `id`.
-pub fn title(id: u32) -> Option<&'static Title> {
-    CATALOG.iter().find(|t| t.id == id)
+/// La sélection embarquée : 80 titres, 20 par plateforme.
+pub fn builtin() -> &'static [Title] {
+    static BUILTIN: OnceLock<Vec<Title>> = OnceLock::new();
+    BUILTIN.get_or_init(builtin_titles)
+}
+
+/// Un titre de la sélection embarquée, par sa clé.
+pub fn builtin_title(key: &str) -> Option<&'static Title> {
+    builtin().iter().find(|t| t.key == key)
 }
 
 /// Un générateur pseudo-aléatoire (splitmix64) : rapide, sans dépendance, et identique
-/// sur le serveur et dans le navigateur pour une même graine.
+/// sur le serveur, dans le navigateur et dans l'application iOS pour une même graine.
 #[derive(Clone, Debug)]
 pub struct Rng(u64);
 
@@ -422,34 +671,34 @@ pub fn day_seed(unix_seconds: u64) -> u64 {
 /// Le nombre de titres d'un tirage.
 pub const PICKS: usize = 5;
 
-/// Tire `n` titres au hasard, sans doublon, parmi ceux de `platform` et `kind`
-/// (`None` : tous). La même graine donne toujours le même tirage.
+/// Tire `n` titres de `pool` au hasard, sans doublon, parmi ceux de `platform` et
+/// `kind` (`None` : tous). La même graine donne toujours le même tirage.
 pub fn picks(
+    pool: &[Title],
     seed: u64,
     platform: Option<Platform>,
     kind: Option<Kind>,
     n: usize,
-) -> Vec<&'static Title> {
-    let mut pool: Vec<&'static Title> = CATALOG
+) -> Vec<Title> {
+    let mut found: Vec<&Title> = pool
         .iter()
-        .filter(|t| platform.is_none_or(|p| t.platform == p))
+        .filter(|t| platform.is_none_or(|p| t.platforms.contains(&p)))
         .filter(|t| kind.is_none_or(|k| t.kind == k))
         .collect();
     let mut rng = Rng::new(seed ^ 0x005E_ED0F_F11E);
-    let n = n.min(pool.len());
+    let n = n.min(found.len());
     // Fisher-Yates partiel : seuls les `n` premiers sont mélangés.
     for i in 0..n {
-        let j = i + rng.below(pool.len() - i);
-        pool.swap(i, j);
+        let j = i + rng.below(found.len() - i);
+        found.swap(i, j);
     }
-    pool.truncate(n);
-    pool
+    found.into_iter().take(n).cloned().collect()
 }
 
 /// La similarité de deux titres (0 à 1) : genres en commun (indice de Jaccard), un
-/// peu plus pour le même format et la même plateforme.
-pub fn similarity(a: &Title, b: &Title) -> f32 {
-    let (ma, mb) = (a.genre_mask(), b.genre_mask());
+/// peu plus pour le même format et une plateforme commune.
+pub fn similarity(a: &Title, b: &Seen) -> f32 {
+    let (ma, mb) = (a.genre_mask(), mask(&b.genres));
     let union = (ma | mb).count_ones();
     let jaccard = if union == 0 {
         0.0
@@ -460,125 +709,161 @@ pub fn similarity(a: &Title, b: &Title) -> f32 {
     if a.kind == b.kind {
         score += 0.12;
     }
-    if a.platform == b.platform {
+    if a.platforms.iter().any(|p| b.platforms.contains(p)) {
         score += 0.08;
     }
     score
 }
 
-/// Pourquoi un titre est suggéré.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Reason {
-    /// Il ressemble à un titre aimé.
-    BecauseYouLiked(&'static Title),
-    /// Il est dans les genres préférés.
-    YourGenres(Vec<Genre>),
-    /// Une valeur sûre du catalogue (pas encore assez de votes).
-    Classic,
-}
-
-impl Reason {
-    /// La phrase affichée.
-    pub fn text(&self) -> String {
-        match self {
-            Reason::BecauseYouLiked(t) => format!("Parce que vous avez aimé « {} »", t.name),
-            Reason::YourGenres(genres) => format!(
-                "Dans vos genres : {}",
-                genres
-                    .iter()
-                    .map(|g| g.label())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ),
-            Reason::Classic => "Une valeur sûre du catalogue".to_owned(),
-        }
-    }
-}
-
 /// Une suggestion.
-#[derive(Clone, Debug, PartialEq)]
+#[data]
+#[derive(PartialEq)]
 pub struct Suggestion {
     /// Le titre suggéré.
-    pub title: &'static Title,
+    pub title: Title,
     /// Son score (plus il est haut, mieux c'est).
     pub score: f32,
-    /// Pourquoi.
-    pub reason: Reason,
+    /// Pourquoi il est suggéré.
+    pub reason: String,
 }
 
-/// Les valeurs sûres, montrées tant qu'il n'y a ni vote ni préférence.
-const CLASSICS: [u32; 12] = [27, 8, 44, 6, 42, 21, 49, 9, 25, 15, 60, 32];
-
 /// Les goûts d'une personne, tels que le moteur les lit.
-#[derive(Clone, Debug, Default)]
+#[data]
+#[derive(Default, PartialEq)]
 pub struct Profile {
     /// Les titres aimés.
-    pub liked: Vec<u32>,
+    #[serde(default)]
+    pub liked: Vec<Seen>,
     /// Les titres vus mais pas aimés.
-    pub disliked: Vec<u32>,
-    /// Les plateformes auxquelles elle est abonnée (vide : toutes).
+    #[serde(default)]
+    pub disliked: Vec<Seen>,
+    /// Ses plateformes (vide : toutes).
+    #[serde(default)]
     pub platforms: Vec<Platform>,
     /// Ses genres préférés.
+    #[serde(default)]
     pub genres: Vec<Genre>,
     /// Films, séries ou les deux (`None`).
+    #[serde(default)]
     pub kind: Option<Kind>,
 }
 
-/// Les `n` meilleures suggestions pour `profile`, parmi les titres pas encore votés.
-pub fn recommend(profile: &Profile, n: usize) -> Vec<Suggestion> {
-    let liked: Vec<&Title> = profile.liked.iter().filter_map(|&id| title(id)).collect();
-    let disliked: Vec<&Title> = profile
-        .disliked
-        .iter()
-        .filter_map(|&id| title(id))
-        .collect();
-    let preferred = profile.genres.iter().fold(0u16, |m, g| m | g.bit());
+impl Profile {
+    /// Aucun vote ni préférence ?
+    pub fn is_empty(&self) -> bool {
+        *self == Profile::default()
+    }
 
-    let mut found: Vec<Suggestion> = CATALOG
-        .iter()
-        .filter(|t| !profile.liked.contains(&t.id) && !profile.disliked.contains(&t.id))
-        .filter(|t| profile.platforms.is_empty() || profile.platforms.contains(&t.platform))
-        .filter(|t| profile.kind.is_none_or(|k| t.kind == k))
-        .map(|t| {
-            // Le titre aimé qui lui ressemble le plus.
-            let best = liked
+    /// Les genres les plus présents dans les goûts (préférés, puis aimés), au plus `n`.
+    pub fn top_genres(&self, n: usize) -> Vec<Genre> {
+        let mut weights: Vec<(Genre, f32)> = Genre::ALL.iter().map(|&g| (g, 0.0)).collect();
+        for (genre, weight) in &mut weights {
+            if self.genres.contains(genre) {
+                *weight += 1.5;
+            }
+            *weight += self
+                .liked
                 .iter()
-                .map(|l| (similarity(t, l), *l))
+                .filter(|s| s.genres.contains(genre))
+                .count() as f32;
+            *weight -= 0.5
+                * self
+                    .disliked
+                    .iter()
+                    .filter(|s| s.genres.contains(genre))
+                    .count() as f32;
+        }
+        weights.retain(|(_, w)| *w > 0.0);
+        weights.sort_by(|a, b| b.1.total_cmp(&a.1));
+        weights.into_iter().take(n).map(|(g, _)| g).collect()
+    }
+
+    fn voted(&self, key: &str) -> bool {
+        self.liked
+            .iter()
+            .chain(&self.disliked)
+            .any(|s| s.key == key)
+    }
+}
+
+/// Les `n` meilleures suggestions pour `profile` parmi `candidates` (les plus
+/// populaires d'abord : leur rang donne un petit bonus), sans les titres déjà votés.
+/// `popular` est la raison donnée quand rien d'autre ne l'explique.
+pub fn recommend(
+    candidates: &[Title],
+    profile: &Profile,
+    n: usize,
+    popular: &str,
+) -> Vec<Suggestion> {
+    let preferred = mask(&profile.genres);
+    let mut seen_keys = Vec::new();
+    let mut found: Vec<Suggestion> = candidates
+        .iter()
+        .filter(|t| !profile.voted(&t.key))
+        .filter(|t| {
+            profile.platforms.is_empty()
+                || t.platforms.is_empty()
+                || t.platforms.iter().any(|p| profile.platforms.contains(p))
+        })
+        .filter(|t| profile.kind.is_none_or(|k| t.kind == k))
+        .filter(|t| {
+            // Un même titre peut venir de plusieurs listes.
+            let new = !seen_keys.contains(&t.key);
+            seen_keys.push(t.key.clone());
+            new
+        })
+        .enumerate()
+        .map(|(rank, t)| {
+            let best = profile
+                .liked
+                .iter()
+                .map(|l| (similarity(t, l), l))
                 .max_by(|a, b| a.0.total_cmp(&b.0));
-            let from_likes: f32 = liked.iter().map(|l| similarity(t, l)).sum();
-            let from_dislikes: f32 = disliked.iter().map(|d| similarity(t, d)).sum();
+            let from_likes: f32 = profile.liked.iter().map(|l| similarity(t, l)).sum();
+            let from_dislikes: f32 = profile.disliked.iter().map(|d| similarity(t, d)).sum();
             let shared = t.genre_mask() & preferred;
             let from_genres = shared.count_ones() as f32 * 0.6;
-            let classic = CLASSICS
-                .iter()
-                .position(|&id| id == t.id)
-                .map_or(0.0, |rank| 0.3 - rank as f32 * 0.02);
-            let score = from_likes * 1.5 - from_dislikes + from_genres + classic;
+            let popularity = (0.3 - rank as f32 * 0.02).max(0.0);
+            let score = from_likes * 1.5 - from_dislikes + from_genres + popularity;
             let reason = match best {
-                Some((s, l)) if s >= 0.35 => Reason::BecauseYouLiked(l),
-                _ if shared != 0 => Reason::YourGenres(
+                Some((s, l)) if s >= 0.35 => format!("Parce que vous avez aimé « {} »", l.name),
+                _ if shared != 0 => format!(
+                    "Dans vos genres : {}",
                     t.genres
                         .iter()
-                        .copied()
                         .filter(|g| shared & g.bit() != 0)
-                        .collect(),
+                        .map(|g| g.label())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 ),
-                _ => Reason::Classic,
+                _ => popular.to_owned(),
             };
             Suggestion {
-                title: t,
+                title: t.clone(),
                 score,
                 reason,
             }
         })
         .collect();
-    found.sort_by(|a, b| {
-        b.score
-            .total_cmp(&a.score)
-            .then_with(|| a.title.id.cmp(&b.title.id))
-    });
+    found.sort_by(|a, b| b.score.total_cmp(&a.score));
     found.truncate(n);
     found
+}
+
+/// Les valeurs sûres de la sélection embarquée, en tête des candidats.
+const CLASSICS: [u32; 14] = [27, 8, 44, 6, 42, 21, 61, 49, 9, 25, 62, 15, 60, 32];
+
+/// La sélection embarquée, les valeurs sûres d'abord (les candidats de `recommend`).
+pub fn builtin_candidates() -> Vec<Title> {
+    let mut all: Vec<Title> = builtin().to_vec();
+    all.sort_by_key(|t| {
+        let id: u32 = t.key.trim_start_matches("local:").parse().unwrap_or(0);
+        CLASSICS
+            .iter()
+            .position(|&c| c == id)
+            .unwrap_or(CLASSICS.len() + id as usize)
+    });
+    all
 }
 
 #[cfg(test)]
@@ -586,58 +871,73 @@ mod tests {
     use super::*;
 
     #[test]
-    fn catalog_is_consistent() {
-        assert_eq!(CATALOG.len(), 60);
-        for (i, t) in CATALOG.iter().enumerate() {
-            assert_eq!(t.id as usize, i + 1, "ids follow each other");
-            assert!(!t.genres.is_empty() && t.hue < 360 && !t.pitch.is_empty());
+    fn builtin_is_consistent() {
+        let all = builtin();
+        assert_eq!(all.len(), 80);
+        for (i, t) in all.iter().enumerate() {
+            assert_eq!(t.key, format!("local:{}", i + 1), "ids follow each other");
+            assert!(!t.genres.is_empty() && t.hue < 360 && !t.overview.is_empty());
         }
         for p in Platform::ALL {
-            assert_eq!(CATALOG.iter().filter(|t| t.platform == p).count(), 20);
+            assert_eq!(all.iter().filter(|t| t.platforms.contains(&p)).count(), 20);
             assert_eq!(Platform::from_slug(p.slug()), Some(p));
         }
         for g in Genre::ALL {
             assert_eq!(Genre::from_slug(g.slug()), Some(g));
+            let json = paquets::serde_json::to_string(&g).unwrap();
+            assert_eq!(json, format!("\"{}\"", g.slug()), "serde follows the slugs");
         }
+        let json = paquets::serde_json::to_string(&Platform::PrimeVideo).unwrap();
+        assert_eq!(json, "\"prime-video\"");
     }
 
     #[test]
     fn picks_are_random_but_reproducible() {
-        let a = picks(42, None, None, PICKS);
+        let a = picks(builtin(), 42, None, None, PICKS);
         assert_eq!(a.len(), 5);
         // La même valeur est vérifiée par les tests de l'application iOS.
-        let ids: Vec<u32> = a.iter().map(|t| t.id).collect();
-        assert_eq!(ids, [48, 58, 46, 54, 29]);
-        assert_eq!(a, picks(42, None, None, PICKS));
-        assert_ne!(a, picks(43, None, None, PICKS));
-        let mut ids: Vec<u32> = a.iter().map(|t| t.id).collect();
-        ids.dedup();
-        assert_eq!(ids.len(), 5, "no duplicates");
-        let disney = picks(7, Some(Platform::DisneyPlus), Some(Kind::Film), PICKS);
+        let keys: Vec<&str> = a.iter().map(|t| t.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            ["local:68", "local:39", "local:4", "local:10", "local:25"]
+        );
+        assert_eq!(a, picks(builtin(), 42, None, None, PICKS));
+        assert_ne!(a, picks(builtin(), 43, None, None, PICKS));
+        let prime = picks(
+            builtin(),
+            7,
+            Some(Platform::PrimeVideo),
+            Some(Kind::Film),
+            PICKS,
+        );
         assert!(
-            disney
+            prime
                 .iter()
-                .all(|t| t.platform == Platform::DisneyPlus && t.kind == Kind::Film)
+                .all(|t| t.platforms == [Platform::PrimeVideo] && t.kind == Kind::Film)
         );
     }
 
     #[test]
     fn suggestions_follow_the_votes() {
-        let none = recommend(&Profile::default(), 4);
-        assert_eq!(none[0].title.id, CLASSICS[0]);
-        assert_eq!(none[0].reason, Reason::Classic);
+        let candidates = builtin_candidates();
+        let none = recommend(&candidates, &Profile::default(), 4, "Une valeur sûre");
+        assert_eq!(none[0].title.key, "local:27");
+        assert_eq!(none[0].reason, "Une valeur sûre");
 
         // Aimer des séries policières fait remonter des séries policières.
+        let liked = |key: &str| builtin_title(key).unwrap().seen();
         let profile = Profile {
-            liked: vec![25, 26],
+            liked: vec![liked("local:25"), liked("local:26")],
             ..Profile::default()
         };
-        let found = recommend(&profile, 3);
+        let found = recommend(&candidates, &profile, 3, "");
         assert!(found.iter().all(|s| s.title.genres.contains(&Genre::Crime)));
-        assert!(matches!(found[0].reason, Reason::BecauseYouLiked(_)));
-        assert!(found.iter().all(|s| s.title.id != 25 && s.title.id != 26));
+        assert!(found[0].reason.starts_with("Parce que vous avez aimé"));
+        assert!(found.iter().all(|s| s.title.key != "local:25"));
+        assert_eq!(profile.top_genres(2), [Genre::Crime, Genre::Drame]);
 
         let filtered = recommend(
+            &candidates,
             &Profile {
                 platforms: vec![Platform::Netflix],
                 kind: Some(Kind::Film),
@@ -645,8 +945,28 @@ mod tests {
                 ..Profile::default()
             },
             2,
+            "",
         );
-        assert_eq!(filtered[0].title.id, 20);
-        assert!(matches!(filtered[0].reason, Reason::YourGenres(_)));
+        assert_eq!(filtered[0].title.key, "local:20");
+        assert!(filtered[0].reason.starts_with("Dans vos genres"));
+    }
+
+    #[test]
+    fn tmdb_genres_round_trip() {
+        for g in Genre::ALL {
+            if let Some(id) = g.tmdb_id(Kind::Film) {
+                assert!(Genre::from_tmdb(id).contains(&g), "{g:?}");
+            }
+        }
+        assert_eq!(Genre::from_tmdb(10765), [Genre::Sf, Genre::Fantastique]);
+        assert!(Genre::from_tmdb(10770).is_empty());
+    }
+
+    #[test]
+    fn cast_line() {
+        let mut t = builtin()[0].clone();
+        assert_eq!(t.cast_line(), None);
+        t.cast = vec!["A".into(), "B".into(), "C".into()];
+        assert_eq!(t.cast_line().unwrap(), "Avec A, B et C");
     }
 }

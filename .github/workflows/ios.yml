@@ -6,7 +6,7 @@
 #   - secret   ASC_ISSUER_ID     l'« Issuer ID » affiché sur la même page
 #   - secret   ASC_KEY_P8        le contenu du fichier .p8 téléchargé (rôle Admin ou App Manager)
 #   - secret   APPLE_TEAM_ID     l'identifiant de l'équipe (developer.apple.com → Membership)
-#   - variable REELPICK_API_URL  l'adresse du serveur Heroku (facultatif)
+#   - variable CINESHUFFLE_API_URL  l'adresse du serveur Heroku (facultatif)
 
 name: iOS
 
@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: ios
     env:
-      API_URL: ${{ vars.REELPICK_API_URL }}
+      API_URL: ${{ vars.CINESHUFFLE_API_URL }}
     steps:
       - uses: actions/checkout@v7
       - uses: maxim-lobanov/setup-xcode@v1
@@ -54,9 +54,9 @@ jobs:
           ')
           echo "Simulateur : $udid"
           log="$RUNNER_TEMP/test.log"
-          if ! xcodebuild test -project ReelPick.xcodeproj -scheme ReelPick \
+          if ! xcodebuild test -project CineShuffle.xcodeproj -scheme CineShuffle \
             -destination "id=$udid" CODE_SIGNING_ALLOWED=NO \
-            ${API_URL:+REELPICK_API_URL="$API_URL"} > "$log" 2>&1; then
+            ${API_URL:+CINESHUFFLE_API_URL="$API_URL"} > "$log" 2>&1; then
             grep -E "error:|failed|✘" "$log" | head -60 || true
             tail -80 "$log"
             exit 1
@@ -78,12 +78,12 @@ jobs:
           key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s' "$ASC_KEY_P8" > "$key"
           auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          xcodebuild archive -project ReelPick.xcodeproj -scheme ReelPick -configuration Release \
-            -destination "generic/platform=iOS" -archivePath "$RUNNER_TEMP/ReelPick.xcarchive" \
+          xcodebuild archive -project CineShuffle.xcodeproj -scheme CineShuffle -configuration Release \
+            -destination "generic/platform=iOS" -archivePath "$RUNNER_TEMP/CineShuffle.xcarchive" \
             DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
-            ${API_URL:+REELPICK_API_URL="$API_URL"} "${auth[@]}"
+            ${API_URL:+CINESHUFFLE_API_URL="$API_URL"} "${auth[@]}"
           sed "s/TEAM_ID/$TEAM_ID/" ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
-          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/ReelPick.xcarchive" \
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/CineShuffle.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" "${auth[@]}"
           rm -f "$key"
           echo "### 📲 Build ${{ github.run_number }} envoyé sur TestFlight" >> "$GITHUB_STEP_SUMMARY"

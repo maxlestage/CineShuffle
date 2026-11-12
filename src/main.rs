@@ -1,11 +1,11 @@
-//! Le serveur de ReelPick : les pages, l'API JSON (utilisée par le site et
+//! Le serveur de CineShuffle : les pages, l'API JSON (utilisée par le site et
 //! l'application iOS) et la base de données, avec la sécurité de Paquets.
 //!
 //!     cargo run                      # http://localhost:3000 ($PORT sur Heroku)
 //!     cargo run -- export dist       # le site en fichiers statiques (GitHub Pages)
 //!     cargo run -- catalog-json      # le catalogue en JSON (pour l'application iOS)
 //!
-//! `BASE_PATH` (par exemple `/ReelPick`) préfixe les liens de l'export, `SITE_URL`
+//! `BASE_PATH` (par exemple `/CineShuffle`) préfixe les liens de l'export, `SITE_URL`
 //! donne les adresses absolues (balises canoniques, Open Graph, sitemap).
 
 mod web;
@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
             Ok(())
         }
         Some("catalog-json") => {
-            // Le catalogue en JSON, embarqué dans l'application iOS (ios/ReelPick/catalog.json).
+            // Le catalogue en JSON, embarqué dans l'application iOS (ios/CineShuffle/catalog.json).
             println!("{}", web::api::catalog_json());
             Ok(())
         }

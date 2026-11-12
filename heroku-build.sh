@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Compile le serveur et les îlots (WebAssembly). Lancé sur Heroku par RustConfig une
 # fois que le buildpack emk/rust a installé Rust ; marche aussi à la main : ./heroku-build.sh
-# Le Procfile démarre target/release/reelpick.
+# Le Procfile démarre target/release/cineshuffle.
 set -euo pipefail
 
 # Si les dépôts de Paquets sont privés, Cargo les récupère avec git, qui demande les
@@ -21,12 +21,12 @@ cd "$(dirname "$0")"
 target="${CARGO_TARGET_DIR:-target}"
 
 echo "-----> Compilation du serveur"
-cargo build --release --locked --bin reelpick
+cargo build --release --locked --bin cineshuffle
 mkdir -p target/release
 if [ "$target" != target ]; then
-  cp "$target/release/reelpick" target/release/
+  cp "$target/release/cineshuffle" target/release/
 fi
-echo "       target/release/reelpick prêt"
+echo "       target/release/cineshuffle prêt"
 
 echo "-----> Compilation des îlots (WebAssembly)"
 rustup target add wasm32-unknown-unknown
@@ -45,5 +45,5 @@ if [ ! -x "$bin/wasm-bindgen" ]; then
 fi
 "$bin/wasm-bindgen" --target web --no-typescript --remove-name-section --remove-producers-section \
   --out-dir pkg \
-  "$target/wasm32-unknown-unknown/wasm-release/reelpick.wasm"
+  "$target/wasm32-unknown-unknown/wasm-release/cineshuffle.wasm"
 echo "       îlots prêts dans pkg/"

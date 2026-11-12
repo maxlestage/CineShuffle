@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ReelPickApp: App {
+struct CineShuffleApp: App {
     @State private var model = AppModel()
 
     var body: some Scene {
@@ -9,7 +9,7 @@ struct ReelPickApp: App {
             ContentView()
                 .environment(model)
                 .tint(Theme.accent)
-                .task { await model.refreshStats() }
+                .task { await model.start() }
         }
     }
 }
@@ -25,6 +25,7 @@ enum Theme {
         switch platform {
         case .netflix: Color(red: 0.90, green: 0.04, blue: 0.08)
         case .hboMax: Color(red: 0.49, green: 0.23, blue: 0.93)
+        case .primeVideo: Color(red: 0.0, green: 0.66, blue: 0.88)
         case .disneyPlus: Color(red: 0.05, green: 0.49, blue: 0.95)
         }
     }
