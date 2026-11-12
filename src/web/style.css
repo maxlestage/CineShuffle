@@ -95,6 +95,7 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .muted { color: var(--muted); }
+.nowrap { white-space: nowrap; }
 .center { text-align: center; }
 .eyebrow {
   display: inline-block; margin: 0 0 .6em; font-size: .78rem; font-weight: 700;

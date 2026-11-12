@@ -369,7 +369,15 @@ pub async fn home(_req: Request) -> Page {
         pool: pool_url(),
     })
     .unwrap_or_default();
-    let everything = source::name() == "tmdb" || is_static();
+    // Tout le catalogue (TMDB, en direct ou par l'API qu'appelle le site statique), ou le
+    // nombre de titres connus sans TMDB.
+    let everything = live_catalogue() || (is_static() && api_base().is_some());
+    let known = source::offline().len();
+    let count = if everything {
+        "tous les films et séries".to_owned()
+    } else {
+        format!("{known} films et séries")
+    };
     let content = fragment([
         Node::from(
             section()
@@ -383,7 +391,8 @@ pub async fn home(_req: Request) -> Page {
                                 .child(p().class("eyebrow").text("Netflix · Prime Video · Disney+ · HBO Max"))
                                 .child(
                                     h1().text("Ce soir, on regarde ")
-                                        .child(span().class("gradient-text").text("quoi ?")),
+                                        // Espace insécable : le « ? » ne part jamais seul à la ligne.
+                                        .child(span().class("gradient-text nowrap").text("quoi\u{a0}?")),
                                 )
                                 .child(p().class("lead").text(
                                     "CineShuffle tire au sort 5 films et séries sur vos plateformes. \
@@ -406,7 +415,11 @@ pub async fn home(_req: Request) -> Page {
                                 .child(
                                     ul().class("hero-stats")
                                         .child(li().child(strong().text("4")).text(" plateformes"))
-                                        .child(li().child(strong().text(if everything { "Tous" } else { "80" })).text(" les films et séries"))
+                                        .child(if everything {
+                                            li().child(strong().text("Tous")).text(" les films et séries")
+                                        } else {
+                                            li().child(strong().text(known.to_string())).text(" films et séries")
+                                        })
                                         .child(li().child(strong().text("0")).text(" cookie")),
                                 ),
                         )
@@ -425,11 +438,14 @@ pub async fn home(_req: Request) -> Page {
                                 .class("section-head")
                                 .child(p().class("eyebrow").text("Tirage au sort"))
                                 .child(h2().text("La sélection du jour"))
-                                .child(p().class("muted").text(
+                                .child(p().class("muted").text(if everything {
                                     "Cinq titres tirés au hasard dans tout le catalogue, avec leur affiche, leur résumé \
                                      et leurs acteurs. Filtrez par plateforme ou par format, mélangez autant de fois que \
-                                     vous voulez, et dites-nous ce que vous avez vu.",
-                                )),
+                                     vous voulez, et dites-nous ce que vous avez vu."
+                                } else {
+                                    "Cinq titres tirés au hasard chaque jour. Filtrez par plateforme ou par format, \
+                                     mélangez autant de fois que vous voulez, et dites-nous ce que vous avez vu."
+                                })),
                         )
                         .child(island("picker", props, cineshuffle::picker)),
                 ),
@@ -449,7 +465,7 @@ pub async fn home(_req: Request) -> Page {
                         )
                         .child(
                             ol().class("steps")
-                                .child(step("🎲", "Tirez au sort", "5 titres au hasard parmi tous les films et séries de Netflix, Prime Video, Disney+ et HBO Max."))
+                                .child(step("🎲", "Tirez au sort", format!("5 titres au hasard parmi {count} de Netflix, Prime Video, Disney+ et HBO Max.")))
                                 .child(step("👍", "Votez", "Vu et aimé, vu et pas aimé : un appui suffit. Vos votes restent sur votre appareil."))
                                 .child(step("✨", "Découvrez", "Les suggestions du pied de page se recalculent à chaque vote, selon les genres et le format.")),
                         ),
@@ -488,7 +504,7 @@ pub async fn home(_req: Request) -> Page {
 }
 
 /// Une étape de « Comment ça marche ».
-fn step(icon: &'static str, title: &'static str, text: &'static str) -> Element {
+fn step(icon: &'static str, title: &'static str, text: impl Into<String>) -> Element {
     li().class("step")
         .child(
             span()
@@ -497,7 +513,7 @@ fn step(icon: &'static str, title: &'static str, text: &'static str) -> Element 
                 .text(icon),
         )
         .child(h3().text(title))
-        .child(p().class("muted").text(text))
+        .child(p().class("muted").text(text.into()))
 }
 
 /// L'encart de l'application iOS, avec un téléphone animé en 2D.
