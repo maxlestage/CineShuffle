@@ -3,7 +3,7 @@ name = "reelpick"
 version = "1.0.0"
 edition = "2024"
 rust-version = "1.95"
-description = "ReelPick : 5 films et séries tirés au sort sur Netflix, HBO Max et Disney+, des votes et des suggestions selon vos goûts."
+description = "ReelPick : 5 films et séries tirés au sort sur Netflix, Prime Video, Disney+ et HBO Max, des votes et des suggestions selon vos goûts."
 authors = ["Maxime Nathan Lestage"]
 publish = false
 default-run = "reelpick"
@@ -20,6 +20,8 @@ path = "src/main.rs"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 paquets = { git = "https://github.com/maxlestage/Paquets", features = ["browser-storage"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# Les appels à l'API TMDB (catalogue complet, affiches, résumés, acteurs).
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2", "json", "query", "system-proxy"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 paquets = { git = "https://github.com/maxlestage/Paquets", default-features = false, features = ["client", "browser-storage"] }

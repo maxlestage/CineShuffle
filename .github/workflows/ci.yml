@@ -19,6 +19,7 @@ env:
   GIT_CONFIG_KEY_0: credential.https://github.com.helper
   GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
   CARGO_TERM_COLOR: always
+  HAS_TMDB: ${{ secrets.TMDB_TOKEN != '' }}
 
 jobs:
   test:
@@ -38,6 +39,11 @@ jobs:
         run: cargo clippy --locked --lib --target wasm32-unknown-unknown -- -D warnings
       - name: Tests (catalogue, tirage, suggestions, pages, API, catalogue iOS)
         run: cargo test --locked
+      - name: TMDB en direct (avec le secret TMDB_TOKEN)
+        env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+        if: env.HAS_TMDB == 'true'
+        run: cargo test --locked --bin reelpick -- --ignored --nocapture live
       - name: Îlots (WebAssembly)
         run: |
           cargo build --locked --lib --target wasm32-unknown-unknown --profile wasm-release

@@ -14,7 +14,7 @@ struct PickerScreen: View {
                     Picker("Plateforme", selection: $model.platform) {
                         Text("Toutes").tag(Platform?.none)
                         ForEach(Platform.allCases) { platform in
-                            Text(platform.label).tag(Optional(platform))
+                            Text(platform.shortLabel).tag(Optional(platform))
                         }
                     }
                     .pickerStyle(.segmented)
@@ -67,19 +67,24 @@ struct PickerScreen: View {
                 .padding()
             }
             .navigationTitle("ReelPick")
-            .refreshable { await model.refreshStats() }
+            .refreshable { await model.start() }
+            .overlay(alignment: .top) {
+                if model.loading {
+                    ProgressView().padding(8).background(.thinMaterial, in: Capsule()).padding(.top, 4)
+                }
+            }
         }
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("NETFLIX · HBO MAX · DISNEY+")
+            Text("NETFLIX · PRIME VIDEO · DISNEY+ · HBO MAX")
                 .font(.caption.weight(.bold))
                 .tracking(1.5)
                 .foregroundStyle(Theme.cyan)
             Text("Ce soir, on regarde quoi ?")
                 .font(.title2.bold())
-            Text("Cinq titres au hasard. Votez pour ceux que vous avez vus : vos suggestions s'affinent.")
+            Text("Cinq titres au hasard dans tout le catalogue, avec affiche, résumé et acteurs. Votez pour ceux que vous avez vus : vos suggestions s'affinent.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -109,8 +114,19 @@ struct TitleCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title.name).font(.headline)
                     Text(title.meta).font(.caption.weight(.semibold)).foregroundStyle(Theme.cyan)
-                    Text(title.pitch).font(.subheadline).foregroundStyle(.secondary)
-                    Text(title.genreLabels.joined(separator: " · "))
+                    if let rating = title.rating {
+                        Label(String(format: "%.1f", rating), systemImage: "star.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.yellow)
+                    }
+                    Text(title.overview.isEmpty ? "Résumé bientôt disponible." : title.overview)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(6)
+                    if let cast = title.castLine {
+                        Text(cast).font(.caption).foregroundStyle(.primary)
+                    }
+                    Text(title.genreLabels)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -190,6 +206,7 @@ struct PosterView: View {
             )
             GeometryReader { proxy in
                 let size = max(proxy.size.width, proxy.size.height)
+                // L'affiche de TMDB recouvre l'affiche dessinée une fois chargée.
                 ZStack {
                     Circle()
                         .strokeBorder(.white.opacity(0.22), style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
@@ -204,14 +221,27 @@ struct PosterView: View {
                         .offset(y: float ? -5 : 5)
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
+                if let url = title.posterURL {
+                    AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.4))) { phase in
+                        if let image = phase.image {
+                            image.resizable().scaledToFill().transition(.opacity)
+                        }
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
+                }
             }
-            Text(title.platform.label)
-                .font(.caption2.weight(.heavy))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Theme.color(for: title.platform), in: Capsule())
-                .padding(7)
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(title.platforms) { platform in
+                    Text(platform.label)
+                        .font(.caption2.weight(.heavy))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Theme.color(for: platform), in: Capsule())
+                }
+            }
+            .padding(7)
         }
         .accessibilityHidden(true)
         .onAppear {

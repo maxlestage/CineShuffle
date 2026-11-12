@@ -1,13 +1,14 @@
 import Foundation
 
-/// Le tirage au sort et le moteur de suggestions : la même logique que le site
-/// (src/catalog.rs), pour que l'iPhone donne la même sélection du jour, même hors ligne.
+/// Le tirage au sort et le moteur de suggestions hors ligne : la même logique que le
+/// site (src/catalog.rs), sur la sélection embarquée, pour que l'iPhone fonctionne
+/// sans réseau. En ligne, l'application interroge l'API (tout le catalogue, par TMDB).
 enum Engine {
     /// Le nombre de titres d'un tirage.
     static let picksCount = 5
 
-    /// Les valeurs sûres, montrées tant qu'il n'y a ni vote ni préférence.
-    static let classics: [Int] = [27, 8, 44, 6, 42, 21, 49, 9, 25, 15, 60, 32]
+    /// Les valeurs sûres de la sélection embarquée, en tête des candidats.
+    static let classics: [Int] = [27, 8, 44, 6, 42, 21, 61, 49, 9, 25, 62, 15, 60, 32]
 
     /// Le générateur splitmix64 du site.
     struct Rng {
@@ -42,7 +43,7 @@ enum Engine {
         count: Int = picksCount
     ) -> [Title] {
         var pool = catalog.filter { title in
-            (platform == nil || title.platform == platform) && (kind == nil || title.kind == kind)
+            (platform.map { title.platforms.contains($0) } ?? true) && (kind == nil || title.kind == kind)
         }
         var rng = Rng(seed: seed ^ 0x5E_ED0F_F11E)
         let n = min(count, pool.count)
@@ -53,57 +54,67 @@ enum Engine {
         return Array(pool.prefix(n))
     }
 
-    /// La similarité de deux titres (0 à 1).
-    static func similarity(_ a: Title, _ b: Title) -> Double {
+    /// La similarité d'un titre et d'un titre voté (0 à 1).
+    static func similarity(_ a: Title, _ b: Seen) -> Double {
         let ga = Set(a.genres)
         let gb = Set(b.genres)
         let union = ga.union(gb).count
         let jaccard = union == 0 ? 0 : Double(ga.intersection(gb).count) / Double(union)
         var score = jaccard * 0.8
         if a.kind == b.kind { score += 0.12 }
-        if a.platform == b.platform { score += 0.08 }
+        if !Set(a.platforms).isDisjoint(with: b.platforms) { score += 0.08 }
         return score
     }
 
-    /// Les `count` meilleures suggestions pour `taste`, parmi les titres pas encore votés.
-    static func recommend(from catalog: [Title], taste: Taste, count: Int = 6) -> [Suggestion] {
-        let byId = Dictionary(uniqueKeysWithValues: catalog.map { ($0.id, $0) })
-        let liked = taste.liked.compactMap { byId[$0] }
-        let disliked = taste.disliked.compactMap { byId[$0] }
-        let labels = Dictionary(uniqueKeysWithValues: Genre.all.map { ($0.id, $0.label) })
+    /// La sélection embarquée, les valeurs sûres d'abord.
+    static func candidates(_ catalog: [Title]) -> [Title] {
+        func rank(_ t: Title) -> Int {
+            let id = Int(t.key.replacingOccurrences(of: "local:", with: "")) ?? 0
+            return classics.firstIndex(of: id) ?? (classics.count + id)
+        }
+        return catalog.sorted { rank($0) < rank($1) }
+    }
 
-        let found = catalog
-            .filter { taste.votes[$0.id] == nil }
-            .filter { taste.platforms.isEmpty || taste.platforms.contains($0.platform) }
+    /// Les `count` meilleures suggestions pour `taste` parmi `candidates` (rangés par
+    /// popularité), sans les titres déjà votés.
+    static func recommend(
+        from candidates: [Title],
+        taste: Taste,
+        count: Int = 6,
+        popular: String = "Une valeur sûre du catalogue"
+    ) -> [Suggestion] {
+        let liked = taste.liked
+        let disliked = taste.disliked
+        let eligible = candidates
+            .filter { taste.votes[$0.key] == nil }
+            .filter { taste.platforms.isEmpty || $0.platforms.isEmpty || !taste.platforms.isDisjoint(with: $0.platforms) }
             .filter { taste.kind == nil || $0.kind == taste.kind }
-            .map { title -> Suggestion in
-                let best = liked
-                    .map { (similarity(title, $0), $0) }
-                    .max { $0.0 < $1.0 }
-                let fromLikes = liked.reduce(0) { $0 + similarity(title, $1) }
-                let fromDislikes = disliked.reduce(0) { $0 + similarity(title, $1) }
-                let shared = title.genres.filter { taste.genres.contains($0) }
-                let fromGenres = Double(shared.count) * 0.6
-                let classic = classics.firstIndex(of: title.id).map { 0.3 - Double($0) * 0.02 } ?? 0
-                let score = fromLikes * 1.5 - fromDislikes + fromGenres + classic
-                let reason: String
-                if let best, best.0 >= 0.35 {
-                    reason = "Parce que vous avez aimé « \(best.1.name) »"
-                } else if !shared.isEmpty {
-                    reason = "Dans vos genres : " + shared.compactMap { labels[$0] }.joined(separator: ", ")
-                } else {
-                    reason = "Une valeur sûre du catalogue"
-                }
-                return Suggestion(title: title, score: score, reason: reason)
+        let scored = eligible.enumerated().map { rank, title -> (Int, Suggestion) in
+            let best = liked.map { (similarity(title, $0), $0) }.max { $0.0 < $1.0 }
+            let fromLikes = liked.reduce(0) { $0 + similarity(title, $1) }
+            let fromDislikes = disliked.reduce(0) { $0 + similarity(title, $1) }
+            let shared = title.genres.filter { taste.genres.contains($0) }
+            let fromGenres = Double(shared.count) * 0.6
+            let popularity = max(0, 0.3 - Double(rank) * 0.02)
+            let score = fromLikes * 1.5 - fromDislikes + fromGenres + popularity
+            let reason: String
+            if let best, best.0 >= 0.35 {
+                reason = "Parce que vous avez aimé « \(best.1.name) »"
+            } else if !shared.isEmpty {
+                reason = "Dans vos genres : " + shared.map(Genre.label).joined(separator: ", ")
+            } else {
+                reason = popular
             }
-            .sorted { lhs, rhs in
-                lhs.score == rhs.score ? lhs.title.id < rhs.title.id : lhs.score > rhs.score
-            }
-        return Array(found.prefix(count))
+            return (rank, Suggestion(title: title, score: score, reason: reason))
+        }
+        return scored
+            .sorted { $0.1.score == $1.1.score ? $0.0 < $1.0 : $0.1.score > $1.1.score }
+            .prefix(count)
+            .map(\.1)
     }
 }
 
-/// Le catalogue embarqué dans l'application (catalog.json, généré depuis le serveur).
+/// La sélection embarquée dans l'application (catalog.json, généré depuis le serveur).
 enum Catalog {
     static func load(bundle: Bundle = .main) -> [Title] {
         guard

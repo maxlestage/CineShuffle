@@ -3,6 +3,11 @@
 # navigateur. Relancé chaque nuit pour changer la sélection du jour.
 #
 # Une seule fois : Settings → Pages → Source : « GitHub Actions ».
+#
+# - variable REELPICK_API_URL : l'adresse de l'app Heroku ; le site appelle alors son
+#   API (tout le catalogue, avec les votes de la communauté).
+# - secret   TMDB_TOKEN : un instantané des titres les plus populaires de chaque
+#   plateforme (affiches, résumés) est publié avec le site, pour fonctionner sans serveur.
 
 name: GitHub Pages
 
@@ -61,6 +66,8 @@ jobs:
       - name: Pages et fichiers
         if: steps.pages.outcome == 'success'
         env:
+          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+          REELPICK_API_URL: ${{ vars.REELPICK_API_URL }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: cargo run --locked --release -- export dist

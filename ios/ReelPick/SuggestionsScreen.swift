@@ -27,7 +27,7 @@ struct SuggestionsScreen: View {
                 } header: {
                     Text("Suggestions pour vous")
                 } footer: {
-                    Text("Calculées sur l'iPhone à partir de vos votes : genres en commun, format et plateforme.")
+                    Text("Calculées à partir de vos votes (genres en commun, format, plateforme) dans tout le catalogue de vos plateformes.")
                 }
 
                 Section("Mes plateformes") {
@@ -118,15 +118,28 @@ struct SuggestionRow: View {
     var body: some View {
         let title = suggestion.title
         HStack(spacing: 12) {
-            Text(title.emoji)
-                .font(.title)
-                .frame(width: 50, height: 50)
-                .background(Theme.hue(title.hue, saturation: 0.6, brightness: 0.55).opacity(0.5), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            ZStack {
+                Theme.hue(title.hue, saturation: 0.6, brightness: 0.55).opacity(0.5)
+                Text(title.emoji).font(.title)
+                if let url = title.posterURL {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image { image.resizable().scaledToFill() }
+                    }
+                }
+            }
+            .frame(width: 50, height: 75)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title.name).font(.headline)
-                Text("\(title.platform.label) · \(title.kind.label) · \(title.year)")
+                Text([title.platformLabels, title.kind.label, title.year.map(String.init) ?? ""]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let cast = title.castLine {
+                    Text(cast).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
+                }
                 Text(suggestion.reason)
                     .font(.caption)
                     .foregroundStyle(Theme.cyan)

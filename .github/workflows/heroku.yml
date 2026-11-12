@@ -7,6 +7,10 @@
 #   - variable HEROKU_REGION         facultatif : eu ou us (eu par défaut)
 #   - variable HEROKU_POSTGRES_PLAN  facultatif, ex. essential-0 : garde les votes
 #                                    dans PostgreSQL (sinon en mémoire)
+#   - secret   TMDB_TOKEN            le « jeton d'accès en lecture » de TMDB (themoviedb.org →
+#                                    Paramètres → API) : tout le catalogue, affiches, acteurs
+#   - variable CORS_ORIGINS          facultatif : les sites autorisés à appeler l'API
+#                                    (par défaut https://<compte>.github.io, pour GitHub Pages)
 #   - secret   REPOS_TOKEN           facultatif : si les dépôts de Paquets sont privés
 # Sans HEROKU_API_KEY ou HEROKU_APP_NAME, le déploiement est simplement sauté.
 
@@ -28,6 +32,8 @@ jobs:
     env:
       HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
+      CORS_ORIGINS: ${{ vars.CORS_ORIGINS || format('https://{0}.github.io', github.repository_owner) }}
       APP: ${{ vars.HEROKU_APP_NAME }}
       REGION: ${{ vars.HEROKU_REGION || 'eu' }}
       POSTGRES_PLAN: ${{ vars.HEROKU_POSTGRES_PLAN }}
@@ -73,7 +79,12 @@ jobs:
             -d "{\"updates\":[{\"buildpack\":\"$BUILDPACK\"}]}" > /dev/null
 
           web_url=$(api "https://api.heroku.com/apps/$APP" | jq -r '.web_url')
-          config=$(jq -n --arg site "${web_url%/}" '{SITE_URL: $site}')
+          config=$(jq -n --arg site "${web_url%/}" --arg cors "$CORS_ORIGINS" '{SITE_URL: $site, CORS_ORIGINS: $cors}')
+          if [ -n "${TMDB_TOKEN:-}" ]; then
+            config=$(jq --arg token "$TMDB_TOKEN" '. + {TMDB_TOKEN: $token}' <<< "$config")
+          else
+            echo "::warning::Pas de secret TMDB_TOKEN : ReelPick utilisera sa sélection embarquée (80 titres) au lieu de tout le catalogue."
+          fi
           if [ -n "${REPOS_TOKEN:-}" ]; then
             config=$(jq --arg token "$REPOS_TOKEN" '. + {REPOS_TOKEN: $token}' <<< "$config")
           fi

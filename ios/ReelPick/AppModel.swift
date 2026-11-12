@@ -1,34 +1,43 @@
 import Foundation
 import Observation
 
-/// L'état de l'application : le catalogue, le tirage, les goûts et les votes de la
-/// communauté. Les goûts sont gardés dans `UserDefaults`.
+/// L'état de l'application : le tirage, les goûts, les suggestions et les votes de la
+/// communauté. En ligne, les titres viennent de l'API (tout le catalogue, par TMDB) ;
+/// hors ligne, de la sélection embarquée. Les goûts sont gardés dans `UserDefaults`.
 @MainActor
 @Observable
 final class AppModel {
-    /// Le catalogue embarqué.
+    /// La sélection embarquée (secours hors ligne).
     let catalog: [Title]
 
-    /// La graine du tirage (la sélection du jour au lancement).
-    var seed: UInt64 = Engine.daySeed()
-    /// Le filtre de plateforme du tirage (`nil` : toutes).
-    var platform: Platform? {
-        didSet { reshuffleRound += 1 }
-    }
-    /// Le filtre de format du tirage (`nil` : films et séries).
-    var kind: Kind? {
-        didSet { reshuffleRound += 1 }
-    }
+    /// Les 5 titres affichés.
+    private(set) var picks: [Title] = []
+    /// Les suggestions affichées.
+    private(set) var suggestions: [Suggestion] = []
+    /// Un tirage est en cours.
+    private(set) var loading = false
     /// Change à chaque nouveau tirage (pour rejouer les animations).
     private(set) var reshuffleRound = 0
 
+    /// Le filtre de plateforme du tirage (`nil` : toutes).
+    var platform: Platform? {
+        didSet { if platform != oldValue { Task { await draw(seed: Self.randomSeed()) } } }
+    }
+    /// Le filtre de format du tirage (`nil` : films et séries).
+    var kind: Kind? {
+        didSet { if kind != oldValue { Task { await draw(seed: Self.randomSeed()) } } }
+    }
+
     /// Les goûts de la personne.
     var taste: Taste {
-        didSet { save() }
+        didSet {
+            save()
+            if taste != oldValue { Task { await refreshSuggestions() } }
+        }
     }
 
     /// Les votes de la communauté, par titre.
-    private(set) var stats: [Int: Stat] = [:]
+    private(set) var stats: [String: Stat] = [:]
     /// Le serveur répond-il ?
     private(set) var online = false
 
@@ -36,14 +45,14 @@ final class AppModel {
     var serverURL: String {
         didSet {
             defaults.set(serverURL, forKey: Keys.server)
-            Task { await refreshStats() }
+            Task { await start() }
         }
     }
 
     private let defaults: UserDefaults
 
     private enum Keys {
-        static let taste = "reelpick.taste"
+        static let taste = "reelpick.taste.v2"
         static let server = "reelpick.server"
     }
 
@@ -57,6 +66,8 @@ final class AppModel {
             taste = Taste()
         }
         serverURL = defaults.string(forKey: Keys.server) ?? AppModel.defaultServer
+        picks = Engine.picks(from: catalog, seed: Engine.daySeed())
+        suggestions = Engine.recommend(from: Engine.candidates(catalog), taste: taste)
     }
 
     /// L'adresse donnée à la compilation (Info.plist, `ReelPickAPIBaseURL`).
@@ -70,33 +81,55 @@ final class AppModel {
         return APIClient(baseURL: url)
     }
 
-    // MARK: - Tirage
+    static func randomSeed() -> UInt64 { UInt64.random(in: 1...UInt64.max) }
 
-    /// Les 5 titres tirés.
-    var picks: [Title] {
-        Engine.picks(from: catalog, seed: seed, platform: platform, kind: kind)
+    /// Au lancement : la sélection du jour, les suggestions et les votes du serveur.
+    func start() async {
+        await draw(seed: nil)
+        await refreshSuggestions()
+        await refreshStats()
     }
+
+    // MARK: - Tirage
 
     /// Un nouveau tirage.
     func shuffle() {
-        var next = UInt64.random(in: 1...UInt64.max)
-        if next == seed { next &+= 1 }
-        seed = next
+        Task { await draw(seed: Self.randomSeed()) }
+    }
+
+    /// Tire 5 titres : au serveur (tout le catalogue), sinon dans la sélection embarquée.
+    /// `seed == nil` : la sélection du jour.
+    func draw(seed: UInt64?) async {
+        loading = true
+        defer { loading = false }
+        var found: [Title] = []
+        if let api {
+            do {
+                found = try await api.picks(seed: seed, platform: platform, kind: kind)
+                online = true
+            } catch {
+                online = false
+            }
+        }
+        if found.isEmpty {
+            found = Engine.picks(from: catalog, seed: seed ?? Engine.daySeed(), platform: platform, kind: kind)
+        }
+        picks = found
         reshuffleRound += 1
     }
 
     // MARK: - Votes
 
-    func vote(for title: Title) -> Bool? { taste.votes[title.id] }
+    func vote(for title: Title) -> Bool? { taste.vote(title.key) }
 
     /// Vote (ou retire le vote) et l'envoie au serveur.
     func toggleVote(_ title: Title, liked: Bool) {
-        let change = taste.toggleVote(title.id, liked: liked)
-        applyLocally(title.id, before: change.before, now: change.now)
+        let change = taste.toggleVote(title, liked: liked)
         guard let api else { return }
+        applyLocally(title.key, before: change.before, now: change.now)
         Task {
             do {
-                try await api.vote(title: title.id, previous: change.before, liked: change.now)
+                try await api.vote(title: title.key, previous: change.before, liked: change.now)
                 online = true
             } catch {
                 online = false
@@ -104,26 +137,23 @@ final class AppModel {
         }
     }
 
-    private func applyLocally(_ id: Int, before: Bool?, now: Bool?) {
-        let old = stats[id] ?? Stat(title: id, likes: 0, dislikes: 0)
+    private func applyLocally(_ key: String, before: Bool?, now: Bool?) {
+        let old = stats[key] ?? Stat(title: key, likes: 0, dislikes: 0)
         var likes = old.likes
         var dislikes = old.dislikes
         if before == true { likes = max(0, likes - 1) }
         if before == false { dislikes = max(0, dislikes - 1) }
         if now == true { likes += 1 }
         if now == false { dislikes += 1 }
-        stats[id] = Stat(title: id, likes: likes, dislikes: dislikes)
+        stats[key] = Stat(title: key, likes: likes, dislikes: dislikes)
     }
 
     /// Recharge les votes de la communauté.
     func refreshStats() async {
-        guard let api else {
-            online = false
-            return
-        }
+        guard let api else { return }
         do {
             let all = try await api.stats()
-            stats = Dictionary(uniqueKeysWithValues: all.map { ($0.title, $0) })
+            stats = Dictionary(all.map { ($0.title, $0) }, uniquingKeysWith: { _, last in last })
             online = true
         } catch {
             online = false
@@ -132,8 +162,20 @@ final class AppModel {
 
     // MARK: - Suggestions
 
-    var suggestions: [Suggestion] {
-        Engine.recommend(from: catalog, taste: taste)
+    /// Recalcule les suggestions : au serveur, sinon sur l'iPhone.
+    func refreshSuggestions() async {
+        let wanted = taste
+        if let api {
+            do {
+                let found = try await api.recommendations(wanted.profile(limit: 6))
+                if wanted == taste { suggestions = found }
+                online = true
+                return
+            } catch {
+                online = false
+            }
+        }
+        suggestions = Engine.recommend(from: Engine.candidates(catalog), taste: wanted)
     }
 
     func togglePlatform(_ platform: Platform) {
