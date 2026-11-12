@@ -1,0 +1,9 @@
+# Heroku avec le buildpack emk/rust (https://github.com/emk/heroku-buildpack-rust).
+#
+# Le buildpack lit ce fichier, installe Rust, puis lancerait un simple
+# `cargo build --release`. Il ne sait pas compiler les îlots (WebAssembly) : sa
+# compilation est sautée (RUST_SKIP_BUILD) et heroku-build.sh fait tout, une fois
+# Rust installé.
+VERSION=stable
+RUST_SKIP_BUILD=1
+trap 'status=$?; if [ "$status" -eq 0 ]; then ENV_DIR="$ENV_DIR" bash "$BUILD_DIR/heroku-build.sh" || exit 1; fi' EXIT

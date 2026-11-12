@@ -1,0 +1,92 @@
+# Teste chaque push. Quand tout est vert, la branche est fusionnée automatiquement
+# dans master (sauf master elle-même et les branches wip/...), puis master est
+# déployée : Heroku (heroku.yml), GitHub Pages (pages.yml) et l'app iOS (ios.yml).
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Si les dépôts de Paquets sont privés, Cargo les récupère avec git, qui demande les
+  # identifiants à un assistant lisant le secret REPOS_TOKEN (un jeton GitHub qui peut
+  # les lire). Le jeton n'apparaît dans aucune URL ; sans le secret, rien ne change.
+  REPOS_TOKEN: ${{ secrets.REPOS_TOKEN }}
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  GIT_CONFIG_COUNT: ${{ secrets.REPOS_TOKEN != '' && 1 || 0 }}
+  GIT_CONFIG_KEY_0: credential.https://github.com.helper
+  GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Rust (fmt, clippy, tests, WebAssembly, export)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - name: Clippy (serveur)
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Clippy (îlots, wasm32)
+        run: cargo clippy --locked --lib --target wasm32-unknown-unknown -- -D warnings
+      - name: Tests (catalogue, tirage, suggestions, pages, API, catalogue iOS)
+        run: cargo test --locked
+      - name: Îlots (WebAssembly)
+        run: |
+          cargo build --locked --lib --target wasm32-unknown-unknown --profile wasm-release
+          version=$(grep -A1 '^name = "wasm-bindgen"$' Cargo.lock | sed -n 's/^version = "\(.*\)"$/\1/p')
+          curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${version}/wasm-bindgen-${version}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar -xz --strip-components=1 -C "$HOME/.cargo/bin"
+          wasm-bindgen --target web --no-typescript --remove-name-section --remove-producers-section \
+            --out-dir pkg target/wasm32-unknown-unknown/wasm-release/reelpick.wasm
+      - name: Export statique
+        run: BASE_PATH="/${{ github.event.repository.name }}" cargo run --locked --release -- export dist
+
+  merge:
+    name: Fusion dans master
+    needs: test
+    if: >-
+      github.event_name == 'push' && github.ref_name != 'master' &&
+      !startsWith(github.ref_name, 'wip/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: merge-into-master
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Fusionner ${{ github.ref_name }}
+        env:
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git merge-base --is-ancestor "$SHA" HEAD; then
+            echo "$BRANCH est déjà dans master."
+            exit 0
+          fi
+          git merge --no-ff --no-edit "$SHA" -m "Merge branch '$BRANCH' into master (auto-merge)"
+          git push origin HEAD:master
+          echo "::notice title=Fusion automatique::$BRANCH fusionnée dans master"
+      # Un push fait par un workflow ne lance aucun autre workflow : on les lance ici.
+      - name: Déployer master (Heroku, GitHub Pages, iOS)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for workflow in heroku.yml pages.yml ios.yml; do
+            gh workflow run "$workflow" --ref master --repo "$GITHUB_REPOSITORY"
+          done

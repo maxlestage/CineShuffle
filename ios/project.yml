@@ -1,0 +1,67 @@
+# Le projet Xcode est généré par XcodeGen (brew install xcodegen ; xcodegen generate) :
+# aucun fichier .xcodeproj à maintenir, GitHub Actions le génère à chaque build.
+name: ReelPick
+options:
+  bundleIdPrefix: com.maxlestage
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  developmentLanguage: fr
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  ReelPick:
+    type: application
+    platform: iOS
+    sources:
+      - path: ReelPick
+    info:
+      path: ReelPick/Info.plist
+      properties:
+        CFBundleDisplayName: ReelPick
+        CFBundleDevelopmentRegion: fr
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.entertainment
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: AccentColor
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ReelPickAPIBaseURL: $(REELPICK_API_URL)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.reelpick
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        # L'adresse du serveur, remplacée par la variable REELPICK_API_URL du dépôt.
+        REELPICK_API_URL: https://reelpick.herokuapp.com
+  ReelPickTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ReelPickTests
+    dependencies:
+      - target: ReelPick
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.reelpick.tests
+schemes:
+  ReelPick:
+    build:
+      targets:
+        ReelPick: all
+        ReelPickTests: [test]
+    test:
+      targets:
+        - ReelPickTests
+      gatherCoverageData: true
