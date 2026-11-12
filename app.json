@@ -1,8 +1,8 @@
 {
-  "name": "ReelPick",
+  "name": "CineShuffle",
   "description": "5 films et séries tirés au sort sur Netflix, HBO Max et Disney+, des votes et des suggestions selon vos goûts. Écrit en Rust avec Paquets.",
-  "repository": "https://github.com/maxlestage/ReelPick",
-  "logo": "https://raw.githubusercontent.com/maxlestage/ReelPick/master/public/icons/icon-192.png",
+  "repository": "https://github.com/maxlestage/CineShuffle",
+  "logo": "https://raw.githubusercontent.com/maxlestage/CineShuffle/master/public/icons/icon-192.png",
   "keywords": ["rust", "paquets", "wasm", "pwa", "films", "series"],
   "stack": "heroku-26",
   "buildpacks": [

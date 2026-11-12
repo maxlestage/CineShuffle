@@ -1,10 +1,10 @@
-# Publie le site sur GitHub Pages, en fichiers statiques (`reelpick export`) : les
+# Publie le site sur GitHub Pages, en fichiers statiques (`cineshuffle export`) : les
 # pages, les îlots WebAssembly et la PWA. Sans serveur, les votes restent dans le
 # navigateur. Relancé chaque nuit pour changer la sélection du jour.
 #
 # Une seule fois : Settings → Pages → Source : « GitHub Actions ».
 #
-# - variable REELPICK_API_URL : l'adresse de l'app Heroku ; le site appelle alors son
+# - variable CINESHUFFLE_API_URL : l'adresse de l'app Heroku ; le site appelle alors son
 #   API (tout le catalogue, avec les votes de la communauté).
 # - secret   TMDB_TOKEN : un instantané des titres les plus populaires de chaque
 #   plateforme (affiches, résumés) est publié avec le site, pour fonctionner sans serveur.
@@ -62,12 +62,12 @@ jobs:
           curl -sSfL "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${version}/wasm-bindgen-${version}-x86_64-unknown-linux-musl.tar.gz" \
             | tar -xz --strip-components=1 -C "$HOME/.cargo/bin"
           wasm-bindgen --target web --no-typescript --remove-name-section --remove-producers-section \
-            --out-dir pkg target/wasm32-unknown-unknown/wasm-release/reelpick.wasm
+            --out-dir pkg target/wasm32-unknown-unknown/wasm-release/cineshuffle.wasm
       - name: Pages et fichiers
         if: steps.pages.outcome == 'success'
         env:
           TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
-          REELPICK_API_URL: ${{ vars.REELPICK_API_URL }}
+          CINESHUFFLE_API_URL: ${{ vars.CINESHUFFLE_API_URL }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: cargo run --locked --release -- export dist

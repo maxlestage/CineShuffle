@@ -1,4 +1,4 @@
-//! `reelpick export <dossier>` : le site en fichiers statiques, pour GitHub Pages.
+//! `cineshuffle export <dossier>` : le site en fichiers statiques, pour GitHub Pages.
 //!
 //! Chaque page vient du serveur lui-même, par le client de test en mémoire de Paquets
 //! (`app.test()`) : le site statique et le site hébergé sont identiques. Sans serveur,
@@ -14,15 +14,15 @@ use super::{app, set_static, source};
 /// l'instantané d'un site statique.
 const SNAPSHOT_PAGES: u32 = 5;
 
-/// Écrit le site dans `out`, liens derrière `base` (`""` ou `/ReelPick`), adresses
+/// Écrit le site dans `out`, liens derrière `base` (`""` ou `/CineShuffle`), adresses
 /// absolues sur `site_url`. Renvoie le nombre de fichiers écrits.
 pub async fn export(out: &Path, base: &str, site_url: Option<String>) -> io::Result<usize> {
     let base = base.trim_end_matches('/').to_owned();
     let site_url = site_url
         .or_else(|| (!base.is_empty()).then(|| format!("https://maxlestage.github.io{base}")));
-    // Le serveur qu'appelle le site statique (REELPICK_API_URL, par exemple l'app Heroku) :
+    // Le serveur qu'appelle le site statique (CINESHUFFLE_API_URL, par exemple l'app Heroku) :
     // tout le catalogue. Sans lui, les îlots tirent dans l'instantané `data/titres.json`.
-    let api = std::env::var("REELPICK_API_URL")
+    let api = std::env::var("CINESHUFFLE_API_URL")
         .ok()
         .map(|u| u.trim().trim_end_matches('/').to_owned())
         .filter(|u| u.starts_with("https://") || u.starts_with("http://"));

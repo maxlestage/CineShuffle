@@ -23,7 +23,7 @@ use paquets::orm::web::Store;
 use paquets::prelude::*;
 
 /// La clé du `Store` des goûts.
-pub const TASTE_STORE: &str = "reelpick-taste-v2";
+pub const TASTE_STORE: &str = "cineshuffle-taste-v2";
 
 /// La raison d'une suggestion populaire.
 pub const POPULAR: &str = "Populaire sur vos plateformes";
@@ -125,7 +125,7 @@ impl Taste {
 /// D'où les îlots tirent leurs titres.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Source {
-    /// L'API du serveur ReelPick (son adresse, `""` pour le même site).
+    /// L'API du serveur CineShuffle (son adresse, `""` pour le même site).
     Api(String),
     /// Un fichier JSON de titres (site statique).
     Pool(String),

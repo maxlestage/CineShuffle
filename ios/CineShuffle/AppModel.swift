@@ -52,8 +52,8 @@ final class AppModel {
     private let defaults: UserDefaults
 
     private enum Keys {
-        static let taste = "reelpick.taste.v2"
-        static let server = "reelpick.server"
+        static let taste = "cineshuffle.taste.v2"
+        static let server = "cineshuffle.server"
     }
 
     init(catalog: [Title] = Catalog.load(), defaults: UserDefaults = .standard) {
@@ -70,9 +70,9 @@ final class AppModel {
         suggestions = Engine.recommend(from: Engine.candidates(catalog), taste: taste)
     }
 
-    /// L'adresse donnée à la compilation (Info.plist, `ReelPickAPIBaseURL`).
+    /// L'adresse donnée à la compilation (Info.plist, `CineShuffleAPIBaseURL`).
     static var defaultServer: String {
-        (Bundle.main.object(forInfoDictionaryKey: "ReelPickAPIBaseURL") as? String)?
+        (Bundle.main.object(forInfoDictionaryKey: "CineShuffleAPIBaseURL") as? String)?
             .trimmingCharacters(in: .whitespaces) ?? ""
     }
 

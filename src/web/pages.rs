@@ -2,9 +2,9 @@
 //! complet avec les suggestions), l'accueil, le catalogue, l'application iOS et les
 //! pages légales.
 
+use cineshuffle::catalog::{Kind, Platform, Profile, Suggestion, Title};
+use cineshuffle::{PickerProps, TasteProps, local_picks, poster};
 use paquets::prelude::*;
-use reelpick::catalog::{Kind, Platform, Profile, Suggestion, Title};
-use reelpick::{PickerProps, TasteProps, local_picks, poster};
 
 use super::api::today_seed;
 use super::{THEME_COLOR, absolute, api_base, is_static, link, pool_url, source};
@@ -31,7 +31,7 @@ fn catalogue_link(p: Platform) -> String {
 const STYLE: &str = include_str!("style.css");
 
 /// Le dépôt du projet.
-pub const REPOSITORY: &str = "https://github.com/maxlestage/ReelPick";
+pub const REPOSITORY: &str = "https://github.com/maxlestage/CineShuffle";
 
 /// Le logo : une bobine de film.
 const LOGO: &str = r##"<svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d6d"/><stop offset=".5" stop-color="#a855f7"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><circle cx="24" cy="24" r="21" fill="url(#lg)"/><circle cx="24" cy="24" r="5" fill="#0b0b14"/><circle cx="24" cy="11.5" r="4.6" fill="#0b0b14"/><circle cx="24" cy="36.5" r="4.6" fill="#0b0b14"/><circle cx="11.5" cy="24" r="4.6" fill="#0b0b14"/><circle cx="36.5" cy="24" r="4.6" fill="#0b0b14"/></svg>"##;
@@ -45,9 +45,9 @@ const ICON_UP: &str = r#"<svg viewBox="0 0 24 24" aria-hidden="true" focusable="
 fn brand() -> Element {
     a().class("brand")
         .href(link("/"))
-        .attr("aria-label", "ReelPick, accueil")
+        .attr("aria-label", "CineShuffle, accueil")
         .child(span().class("logo").html(LOGO))
-        .child(span().class("brand-name").text("ReelPick"))
+        .child(span().class("brand-name").text("CineShuffle"))
 }
 
 /// L'en-tête : le logo et la navigation (dépliable sur téléphone, sans JavaScript).
@@ -155,14 +155,14 @@ fn site_footer(suggestions: Vec<Suggestion>) -> Element {
                                 .child(h2().text("Des suggestions qui vous ressemblent"))
                                 .child(p().class("muted").text(
                                     "Choisissez vos plateformes et vos genres, votez pour ce que vous avez vu : \
-                                     ReelPick compare les genres, le format et la plateforme de chaque titre \
+                                     CineShuffle compare les genres, le format et la plateforme de chaque titre \
                                      pour vous proposer les plus proches de vos goûts. Tout reste sur votre appareil.",
                                 )),
                         )
                         .child(island(
                             "taste",
                             taste_props,
-                            reelpick::taste,
+                            cineshuffle::taste,
                         )),
                 )
                 .child(
@@ -214,7 +214,7 @@ fn site_footer(suggestions: Vec<Suggestion>) -> Element {
                         ))
                         .child(footer_column("Application", app_links))
                         .child(footer_column(
-                            "ReelPick",
+                            "CineShuffle",
                             vec![
                                 (link("/a-propos/"), "Notre démarche", false),
                                 (link("/a-propos/#comment"), "Comment ça marche", false),
@@ -253,8 +253,8 @@ fn site_footer(suggestions: Vec<Suggestion>) -> Element {
                                 )
                                 .child(p().text(ATTRIBUTION))
                                 .child(p().text(
-                                    "© 2026 ReelPick · Disponibilités en France, à titre indicatif. Netflix, Prime Video, \
-                                     Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; ReelPick n'est \
+                                    "© 2026 CineShuffle · Disponibilités en France, à titre indicatif. Netflix, Prime Video, \
+                                     Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; CineShuffle n'est \
                                      affilié à aucune d'elles.",
                                 )),
                         )
@@ -266,7 +266,7 @@ fn site_footer(suggestions: Vec<Suggestion>) -> Element {
                                         .href(REPOSITORY)
                                         .attr("rel", "noopener")
                                         .attr("target", "_blank")
-                                        .attr("aria-label", "ReelPick sur GitHub")
+                                        .attr("aria-label", "CineShuffle sur GitHub")
                                         .html(ICON_GITHUB),
                                 )
                                 .child(
@@ -294,13 +294,13 @@ pub fn layout(
     content: impl Into<Node>,
     suggestions: Vec<Suggestion>,
 ) -> Page {
-    let full_title = if title == "ReelPick" {
-        "ReelPick · Ce soir, on regarde quoi ?".to_owned()
+    let full_title = if title == "CineShuffle" {
+        "CineShuffle · Ce soir, on regarde quoi ?".to_owned()
     } else {
-        format!("{title} · ReelPick")
+        format!("{title} · CineShuffle")
     };
     let mut seo = Seo::new()
-        .site_name("ReelPick")
+        .site_name("CineShuffle")
         .locale("fr_FR")
         .og_type("website");
     if let Some(url) = absolute(&link(path)) {
@@ -316,7 +316,7 @@ pub fn layout(
         .plain()
         .style(STYLE)
         .head(format!(
-            r#"<meta name="theme-color" content="{THEME_COLOR}"/><meta name="color-scheme" content="dark light"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="ReelPick"/><link rel="icon" href="{}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{}"/>"#,
+            r#"<meta name="theme-color" content="{THEME_COLOR}"/><meta name="color-scheme" content="dark light"/><meta name="apple-mobile-web-app-capable" content="yes"/><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/><meta name="apple-mobile-web-app-title" content="CineShuffle"/><link rel="icon" href="{}" type="image/svg+xml"/><link rel="apple-touch-icon" href="{}"/>"#,
             link("/favicon.svg"),
             link("/icons/apple-touch-icon.png"),
         ))
@@ -386,7 +386,7 @@ pub async fn home(_req: Request) -> Page {
                                         .child(span().class("gradient-text").text("quoi ?")),
                                 )
                                 .child(p().class("lead").text(
-                                    "ReelPick tire au sort 5 films et séries sur vos plateformes. \
+                                    "CineShuffle tire au sort 5 films et séries sur vos plateformes. \
                                      Votez pour ceux que vous avez vus : vos suggestions s'affinent à chaque vote.",
                                 ))
                                 .child(
@@ -431,7 +431,7 @@ pub async fn home(_req: Request) -> Page {
                                      vous voulez, et dites-nous ce que vous avez vu.",
                                 )),
                         )
-                        .child(island("picker", props, reelpick::picker)),
+                        .child(island("picker", props, cineshuffle::picker)),
                 ),
         ),
         Node::from(
@@ -479,7 +479,7 @@ pub async fn home(_req: Request) -> Page {
         Node::from(ios_teaser(day.iter().skip(2).cloned().collect())),
     ]);
     layout(
-        "ReelPick",
+        "CineShuffle",
         "5 films et séries tirés au sort sur Netflix, Prime Video, Disney+ et HBO Max, avec affiches, résumés et acteurs. Votez pour ce que vous avez vu et recevez des suggestions selon vos goûts.",
         "/",
         content,
@@ -509,7 +509,7 @@ fn ios_teaser(shown: Vec<Title>) -> Element {
                 div()
                     .class("split-text")
                     .child(p().class("eyebrow").text("Swift · SwiftUI"))
-                    .child(h2().text("ReelPick sur iPhone"))
+                    .child(h2().text("CineShuffle sur iPhone"))
                     .child(p().class("muted").text(
                         "L'application iOS native reprend le tirage, les affiches, les acteurs, les votes et les \
                          suggestions, avec des animations fluides et le retour haptique. Elle utilise la même API que ce site.",
@@ -670,7 +670,7 @@ pub async fn catalogue(req: Request) -> Page {
                     .class("container")
                     .child(
                         head.child(p().class("muted").text(
-                            "Les films et séries que ReelPick connaît hors ligne. Sur le site hébergé, avec TMDB, \
+                            "Les films et séries que CineShuffle connaît hors ligne. Sur le site hébergé, avec TMDB, \
                              le tirage et le catalogue couvrent tout ce que proposent les plateformes.",
                         ))
                         .child(div().class("chips").children(Platform::ALL.into_iter().map(|p| {
@@ -713,7 +713,7 @@ pub async fn ios(_req: Request) -> Page {
             "L'application iOS",
             vec![
                 p().class("lead").text(
-                    "ReelPick existe aussi en application native pour iPhone, écrite en Swift avec SwiftUI. \
+                    "CineShuffle existe aussi en application native pour iPhone, écrite en Swift avec SwiftUI. \
                      Elle partage l'API de ce site : même catalogue, mêmes votes, mêmes suggestions.",
                 ),
                 h2().text("Ce qu'elle fait"),
@@ -741,7 +741,7 @@ pub async fn ios(_req: Request) -> Page {
     ]);
     layout(
         "Application iOS",
-        "ReelPick sur iPhone : l'application native en Swift et SwiftUI.",
+        "CineShuffle sur iPhone : l'application native en Swift et SwiftUI.",
         "/application-ios/",
         content,
         suggestions,
@@ -763,17 +763,17 @@ fn text_page(eyebrow: &'static str, title: &'static str, body: Vec<Element>) -> 
 pub async fn about(_req: Request) -> Page {
     let suggestions = footer_suggestions().await;
     let content = text_page(
-        "ReelPick",
+        "CineShuffle",
         "Notre démarche",
         vec![
             p().class("lead").text(
                 "Trop de choix tue l'envie : on passe plus de temps à parcourir les catalogues qu'à regarder. \
-                 ReelPick réduit le choix à cinq titres, tirés au sort parmi une sélection soignée.",
+                 CineShuffle réduit le choix à cinq titres, tirés au sort parmi une sélection soignée.",
             ),
             h2().id("comment").text("Comment ça marche"),
             p().text(
                 "Chaque jour, une graine change et donne une nouvelle sélection, la même pour tout le monde. \
-                 Le bouton « Mélanger » en tire une autre, rien que pour vous. Quand vous votez, ReelPick compare \
+                 Le bouton « Mélanger » en tire une autre, rien que pour vous. Quand vous votez, CineShuffle compare \
                  les genres (indice de Jaccard), le format et la plateforme des titres pour classer les suggestions.",
             ),
             h2().id("installer").text("Installer l'application"),
@@ -781,7 +781,7 @@ pub async fn about(_req: Request) -> Page {
                 .child(li().text("iPhone et iPad : dans Safari, touchez Partager, puis « Sur l'écran d'accueil »."))
                 .child(li().text("Android : dans Chrome, ouvrez le menu ⋮, puis « Installer l'application »."))
                 .child(li().text("Ordinateur : l'icône d'installation apparaît dans la barre d'adresse.")),
-            p().text("Une fois installée, ReelPick s'ouvre en plein écran et fonctionne même sans réseau."),
+            p().text("Une fois installée, CineShuffle s'ouvre en plein écran et fonctionne même sans réseau."),
             h2().text("Technique"),
             p().text(
                 "Le site est écrit en Rust avec le framework Paquets : les pages sont rendues par le serveur, \
@@ -793,7 +793,7 @@ pub async fn about(_req: Request) -> Page {
     );
     layout(
         "À propos",
-        "Pourquoi et comment ReelPick choisit vos films et séries.",
+        "Pourquoi et comment CineShuffle choisit vos films et séries.",
         "/a-propos/",
         content,
         suggestions,
@@ -808,7 +808,7 @@ pub async fn legal(_req: Request) -> Page {
         "Mentions légales",
         vec![
             h2().text("Éditeur"),
-            p().text("ReelPick est un projet personnel édité par Maxime Nathan Lestage."),
+            p().text("CineShuffle est un projet personnel édité par Maxime Nathan Lestage."),
             p().child(text("Contact : par les "))
                 .child(
                     a().href(format!("{REPOSITORY}/issues"))
@@ -820,7 +820,7 @@ pub async fn legal(_req: Request) -> Page {
             p().text("Le site est hébergé par Salesforce, Inc. (Heroku), 415 Mission Street, San Francisco, CA 94105, États-Unis, et en version statique par GitHub, Inc. (GitHub Pages), 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis."),
             h2().text("Propriété intellectuelle"),
             p().text(
-                "Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs. ReelPick n'est ni \
+                "Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs. CineShuffle n'est ni \
                  affilié, ni approuvé, ni sponsorisé par ces services.",
             ),
             h2().text("Données des films et séries"),
@@ -833,7 +833,7 @@ pub async fn legal(_req: Request) -> Page {
     );
     layout(
         "Mentions légales",
-        "Éditeur, hébergement et propriété intellectuelle de ReelPick.",
+        "Éditeur, hébergement et propriété intellectuelle de CineShuffle.",
         "/mentions-legales/",
         content,
         suggestions,
@@ -847,7 +847,7 @@ pub async fn privacy(_req: Request) -> Page {
         "Légal",
         "Confidentialité",
         vec![
-            p().class("lead").text("ReelPick ne collecte aucune donnée personnelle et ne vous suit pas."),
+            p().class("lead").text("CineShuffle ne collecte aucune donnée personnelle et ne vous suit pas."),
             h2().text("Ce qui reste sur votre appareil"),
             p().text(
                 "Vos votes, vos plateformes, vos genres préférés et les titres que vous proposez sont gardés \
@@ -865,7 +865,7 @@ pub async fn privacy(_req: Request) -> Page {
     );
     layout(
         "Confidentialité",
-        "ReelPick ne collecte aucune donnée personnelle : vos goûts restent sur votre appareil.",
+        "CineShuffle ne collecte aucune donnée personnelle : vos goûts restent sur votre appareil.",
         "/confidentialite/",
         content,
         suggestions,
@@ -879,7 +879,7 @@ pub async fn accessibility(_req: Request) -> Page {
         "Légal",
         "Accessibilité",
         vec![
-            p().class("lead").text("ReelPick vise le niveau AA des règles WCAG 2.2."),
+            p().class("lead").text("CineShuffle vise le niveau AA des règles WCAG 2.2."),
             ul().class("list")
                 .child(li().text("Navigation complète au clavier, avec un lien d'évitement et des focus visibles."))
                 .child(li().text("Boutons de vote et filtres annoncés (aria-pressed) aux lecteurs d'écran."))
@@ -897,7 +897,7 @@ pub async fn accessibility(_req: Request) -> Page {
     );
     layout(
         "Accessibilité",
-        "La déclaration d'accessibilité de ReelPick.",
+        "La déclaration d'accessibilité de CineShuffle.",
         "/accessibilite/",
         content,
         suggestions,

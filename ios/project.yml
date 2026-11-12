@@ -1,6 +1,6 @@
 # Le projet Xcode est généré par XcodeGen (brew install xcodegen ; xcodegen generate) :
 # aucun fichier .xcodeproj à maintenir, GitHub Actions le génère à chaque build.
-name: ReelPick
+name: CineShuffle
 options:
   bundleIdPrefix: com.maxlestage
   deploymentTarget:
@@ -16,15 +16,15 @@ settings:
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     DEAD_CODE_STRIPPING: YES
 targets:
-  ReelPick:
+  CineShuffle:
     type: application
     platform: iOS
     sources:
-      - path: ReelPick
+      - path: CineShuffle
     info:
-      path: ReelPick/Info.plist
+      path: CineShuffle/Info.plist
       properties:
-        CFBundleDisplayName: ReelPick
+        CFBundleDisplayName: CineShuffle
         CFBundleDevelopmentRegion: fr
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -34,34 +34,34 @@ targets:
           UIColorName: AccentColor
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        ReelPickAPIBaseURL: $(REELPICK_API_URL)
+        CineShuffleAPIBaseURL: $(CINESHUFFLE_API_URL)
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.reelpick
+        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.cineshuffle
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-        # L'adresse du serveur, remplacée par la variable REELPICK_API_URL du dépôt.
-        REELPICK_API_URL: https://reelpick.herokuapp.com
-  ReelPickTests:
+        # L'adresse du serveur, remplacée par la variable CINESHUFFLE_API_URL du dépôt.
+        CINESHUFFLE_API_URL: https://cineshuffle.herokuapp.com
+  CineShuffleTests:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - path: ReelPickTests
+      - path: CineShuffleTests
     dependencies:
-      - target: ReelPick
+      - target: CineShuffle
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.reelpick.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.maxlestage.cineshuffle.tests
 schemes:
-  ReelPick:
+  CineShuffle:
     build:
       targets:
-        ReelPick: all
-        ReelPickTests: [test]
+        CineShuffle: all
+        CineShuffleTests: [test]
     test:
       targets:
-        - ReelPickTests
+        - CineShuffleTests
       gatherCoverageData: true

@@ -250,6 +250,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "cineshuffle"
+version = "1.0.0"
+dependencies = [
+ "js-sys",
+ "paquets",
+ "reqwest",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "cipher"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1716,19 +1729,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "580c875845b41ecb1564ad1ae4703044cef774145e3d7a94dc2b3fa7c97868fd"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "reelpick"
-version = "1.0.0"
-dependencies = [
- "js-sys",
- "paquets",
- "reqwest",
- "tokio",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]

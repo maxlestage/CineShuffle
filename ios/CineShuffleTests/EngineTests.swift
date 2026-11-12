@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import ReelPick
+@testable import CineShuffle
 
 @MainActor
 struct EngineTests {

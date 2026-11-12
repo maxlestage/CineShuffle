@@ -4,18 +4,18 @@
 //! acteurs, leur année et leurs plateformes (données de disponibilité JustWatch).
 //!
 //! La clé se donne par l'environnement : `TMDB_TOKEN` (le « jeton d'accès en lecture »,
-//! recommandé) ou `TMDB_API_KEY` (la clé v3). Sans clé, ReelPick utilise sa sélection
+//! recommandé) ou `TMDB_API_KEY` (la clé v3). Sans clé, CineShuffle utilise sa sélection
 //! embarquée. Les réponses sont gardées en mémoire quelques heures.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
-use paquets::serde_json::Value;
-use reelpick::POPULAR;
-use reelpick::catalog::{
+use cineshuffle::POPULAR;
+use cineshuffle::catalog::{
     Genre, Kind, Platform, Profile, Rng, Suggestion, Title, hue_for, recommend,
 };
+use paquets::serde_json::Value;
 
 /// L'API de TMDB (`TMDB_API_URL` la remplace, pour les tests).
 const API: &str = "https://api.themoviedb.org/3";
@@ -104,7 +104,7 @@ impl Tmdb {
         };
         let http = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
-            .user_agent(concat!("ReelPick/", env!("CARGO_PKG_VERSION")))
+            .user_agent(concat!("CineShuffle/", env!("CARGO_PKG_VERSION")))
             .build()
             .ok()?;
         Some(Tmdb {
@@ -365,7 +365,7 @@ impl Tmdb {
     }
 
     /// Les suggestions de `profile` : les titres de ses plateformes dans ses genres
-    /// favoris, classés par le moteur de ReelPick, puis complétés (acteurs, plateformes).
+    /// favoris, classés par le moteur de CineShuffle, puis complétés (acteurs, plateformes).
     pub async fn recommend(
         self: &Arc<Self>,
         profile: &Profile,

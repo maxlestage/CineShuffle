@@ -248,7 +248,7 @@ impl Genre {
         Genre::ALL.into_iter().find(|g| g.slug() == slug)
     }
 
-    /// Les genres de ReelPick d'un genre de TMDB (films et séries).
+    /// Les genres de CineShuffle d'un genre de TMDB (films et séries).
     pub fn from_tmdb(id: u32) -> &'static [Genre] {
         match id {
             28 => &[Genre::Action],
@@ -320,7 +320,7 @@ pub struct Title {
     pub year: Option<u16>,
     /// Film ou série.
     pub kind: Kind,
-    /// Les plateformes qui le proposent en France (parmi les quatre de ReelPick).
+    /// Les plateformes qui le proposent en France (parmi les quatre de CineShuffle).
     #[serde(default)]
     pub platforms: Vec<Platform>,
     /// Ses genres.

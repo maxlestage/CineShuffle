@@ -14,8 +14,8 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use cineshuffle::catalog::{self, Kind, Platform, Profile, Suggestion, Title};
 use paquets::prelude::*;
-use reelpick::catalog::{self, Kind, Platform, Profile, Suggestion, Title};
 
 use super::{source, tmdb};
 

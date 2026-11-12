@@ -1,6 +1,6 @@
 import Foundation
 
-/// Le client de l'API du serveur ReelPick (la même que celle du site).
+/// Le client de l'API du serveur CineShuffle (la même que celle du site).
 struct APIClient: Sendable {
     let baseURL: URL
     var session: URLSession = .shared

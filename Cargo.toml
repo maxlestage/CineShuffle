@@ -1,12 +1,12 @@
 [package]
-name = "reelpick"
+name = "cineshuffle"
 version = "1.0.0"
 edition = "2024"
 rust-version = "1.95"
-description = "ReelPick : 5 films et séries tirés au sort sur Netflix, Prime Video, Disney+ et HBO Max, des votes et des suggestions selon vos goûts."
+description = "CineShuffle : 5 films et séries tirés au sort sur Netflix, Prime Video, Disney+ et HBO Max, des votes et des suggestions selon vos goûts."
 authors = ["Maxime Nathan Lestage"]
 publish = false
-default-run = "reelpick"
+default-run = "cineshuffle"
 
 # Une crate, deux cibles : le serveur (src/main.rs) et, compilés en WebAssembly,
 # les îlots de src/lib.rs (le tirage, les votes, les suggestions).
@@ -14,7 +14,7 @@ default-run = "reelpick"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "reelpick"
+name = "cineshuffle"
 path = "src/main.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

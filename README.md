@@ -2,7 +2,7 @@
 
 <img src="public/icons/icon-192.png" width="96" height="96" alt="">
 
-# ReelPick
+# CineShuffle
 
 **Ce soir, on regarde quoi ?**
 
@@ -14,7 +14,7 @@ Site en **Rust** avec [Paquets](https://github.com/maxlestage/Paquets) · PWA in
 
 ---
 
-## Ce que fait ReelPick
+## Ce que fait CineShuffle
 
 | | |
 |---|---|
@@ -28,7 +28,7 @@ Site en **Rust** avec [Paquets](https://github.com/maxlestage/Paquets) · PWA in
 | 📲 **PWA** | Installable sur l'écran d'accueil, utilisable hors ligne (manifeste, service worker, icônes). |
 | 🎞️ **2D et animations** | Affiches dessinées en CSS (dégradés, anneaux qui tournent, emoji qui flottent), éventail de cartes, pellicule qui défile, cartes « distribuées » à chaque tirage, rebond des votes. Coupées si le système demande moins de mouvement. |
 | 🍎 **App iOS** | SwiftUI : le même tirage dans tout le catalogue (par l'API du serveur), affiches, acteurs, votes, suggestions, retour haptique. Hors ligne, elle utilise la sélection embarquée. |
-| 🛟 **Sans clé, ça marche aussi** | Sans clé TMDB (ou si TMDB ne répond pas), ReelPick utilise sa sélection embarquée de 80 titres (20 par plateforme). |
+| 🛟 **Sans clé, ça marche aussi** | Sans clé TMDB (ou si TMDB ne répond pas), CineShuffle utilise sa sélection embarquée de 80 titres (20 par plateforme). |
 
 ## Comment c'est construit
 
@@ -87,9 +87,9 @@ Le workflow Heroku le transmet à l'app, le workflow GitHub Pages s'en sert pour
 
 ### 3. GitHub Pages
 
-Une seule fois, dans l'app GitHub ou sur github.com : **Settings → Pages → Source : « GitHub Actions »**. Le workflow *GitHub Pages* publie ensuite le site à chaque fusion, et chaque nuit (nouvelle sélection du jour) : `https://maxlestage.github.io/ReelPick/`.
+Une seule fois, dans l'app GitHub ou sur github.com : **Settings → Pages → Source : « GitHub Actions »**. Le workflow *GitHub Pages* publie ensuite le site à chaque fusion, et chaque nuit (nouvelle sélection du jour) : `https://maxlestage.github.io/CineShuffle/`.
 
-Sur GitHub Pages il n'y a pas de serveur. Ajoutez la variable **`REELPICK_API_URL`** (l'adresse de l'app Heroku) : le site appelle alors l'API Heroku et tire dans tout le catalogue. Sinon, il tire dans l'instantané publié avec lui (800 titres environ avec `TMDB_TOKEN`, la sélection embarquée sans) et les votes restent sur l'appareil.
+Sur GitHub Pages il n'y a pas de serveur. Ajoutez la variable **`CINESHUFFLE_API_URL`** (l'adresse de l'app Heroku) : le site appelle alors l'API Heroku et tire dans tout le catalogue. Sinon, il tire dans l'instantané publié avec lui (800 titres environ avec `TMDB_TOKEN`, la sélection embarquée sans) et les votes restent sur l'appareil.
 
 ### 4. Heroku (buildpack `emk/rust`)
 
@@ -104,19 +104,19 @@ Dans *Settings → Secrets and variables → Actions* :
 | Secret | `TMDB_TOKEN` | voir l'étape 2 : sans lui, l'app utilise la sélection embarquée |
 | Variable (facultatif) | `CORS_ORIGINS` | les sites autorisés à appeler l'API (par défaut `https://maxlestage.github.io`) |
 
-Puis *Actions → Heroku → Run workflow* (ou un simple push). Le workflow crée l'app sur la pile `heroku-26`, installe le buildpack **`emk/rust`**, envoie le code et suit la compilation : `RustConfig` installe Rust, `heroku-build.sh` compile le serveur et les îlots, le `Procfile` démarre `target/release/reelpick`.
+Puis *Actions → Heroku → Run workflow* (ou un simple push). Le workflow crée l'app sur la pile `heroku-26`, installe le buildpack **`emk/rust`**, envoie le code et suit la compilation : `RustConfig` installe Rust, `heroku-build.sh` compile le serveur et les îlots, le `Procfile` démarre `target/release/cineshuffle`.
 
 Si le dépôt est public, le bouton marche aussi :
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://www.heroku.com/deploy?template=https://github.com/maxlestage/ReelPick)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://www.heroku.com/deploy?template=https://github.com/maxlestage/CineShuffle)
 
 ### 5. L'app iOS sur TestFlight
 
 Le workflow *iOS* génère le projet avec XcodeGen, compile et lance les tests sur un simulateur, sur un Mac de GitHub. Pour l'installer sur votre iPhone avec TestFlight :
 
 1. Sur [developer.apple.com](https://developer.apple.com/account) (compte Apple Developer), notez votre **Team ID** (*Membership*).
-2. Sur [App Store Connect](https://appstoreconnect.apple.com) : créez l'app (identifiant `com.maxlestage.reelpick`), puis *Utilisateurs et accès → Intégrations → Clés d'API* : créez une clé (rôle *Admin*), téléchargez le `.p8`, notez son **Key ID** et l'**Issuer ID**.
-3. Dans le dépôt, ajoutez les secrets `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID` et `ASC_KEY_P8` (le contenu du `.p8`), et la variable `REELPICK_API_URL` (l'adresse de l'app Heroku).
+2. Sur [App Store Connect](https://appstoreconnect.apple.com) : créez l'app (identifiant `com.maxlestage.cineshuffle`), puis *Utilisateurs et accès → Intégrations → Clés d'API* : créez une clé (rôle *Admin*), téléchargez le `.p8`, notez son **Key ID** et l'**Issuer ID**.
+3. Dans le dépôt, ajoutez les secrets `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID` et `ASC_KEY_P8` (le contenu du `.p8`), et la variable `CINESHUFFLE_API_URL` (l'adresse de l'app Heroku).
 4. *Actions → iOS → Run workflow* : la build arrive dans TestFlight quelques minutes plus tard.
 
 ## Sur un ordinateur (facultatif)
@@ -126,9 +126,9 @@ cargo install --git https://github.com/maxlestage/Paquets paquets --locked
 paquets dev                                   # http://localhost:3000, îlots compris
 cargo test                                    # catalogue, tirage, suggestions, TMDB, pages, API
 TMDB_TOKEN=… cargo test -- --ignored live     # TMDB en direct
-BASE_PATH=/ReelPick cargo run -- export dist  # le site statique
-cargo run -- catalog-json > ios/ReelPick/catalog.json   # après un changement du catalogue
-cd ios && xcodegen generate && open ReelPick.xcodeproj  # l'app iOS (macOS)
+BASE_PATH=/CineShuffle cargo run -- export dist  # le site statique
+cargo run -- catalog-json > ios/CineShuffle/catalog.json   # après un changement du catalogue
+cd ios && xcodegen generate && open CineShuffle.xcodeproj  # l'app iOS (macOS)
 ```
 
 ## Mentions
@@ -137,4 +137,4 @@ Données : [The Movie Database (TMDB)](https://www.themoviedb.org/).
 
 Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB. Affiches, résumés et distributions : The Movie Database. Disponibilités : JustWatch.
 
-Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; ReelPick n'est affilié à aucune d'elles. Les résumés et les affiches dessinées de la sélection embarquée sont originaux.
+Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; CineShuffle n'est affilié à aucune d'elles. Les résumés et les affiches dessinées de la sélection embarquée sont originaux.

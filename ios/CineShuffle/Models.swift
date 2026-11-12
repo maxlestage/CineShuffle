@@ -79,7 +79,7 @@ struct Genre: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Un film ou une série (le JSON de l'API ReelPick : TMDB ou sélection embarquée).
+/// Un film ou une série (le JSON de l'API CineShuffle : TMDB ou sélection embarquée).
 struct Title: Codable, Identifiable, Hashable, Sendable {
     /// `movie:603`, `tv:1399` (TMDB) ou `local:12` (sélection embarquée).
     let key: String

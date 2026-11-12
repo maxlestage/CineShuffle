@@ -83,7 +83,7 @@ jobs:
           if [ -n "${TMDB_TOKEN:-}" ]; then
             config=$(jq --arg token "$TMDB_TOKEN" '. + {TMDB_TOKEN: $token}' <<< "$config")
           else
-            echo "::warning::Pas de secret TMDB_TOKEN : ReelPick utilisera sa sélection embarquée (80 titres) au lieu de tout le catalogue."
+            echo "::warning::Pas de secret TMDB_TOKEN : CineShuffle utilisera sa sélection embarquée (80 titres) au lieu de tout le catalogue."
           fi
           if [ -n "${REPOS_TOKEN:-}" ]; then
             config=$(jq --arg token "$REPOS_TOKEN" '. + {REPOS_TOKEN: $token}' <<< "$config")

@@ -66,7 +66,7 @@ struct PickerScreen: View {
                 }
                 .padding()
             }
-            .navigationTitle("ReelPick")
+            .navigationTitle("CineShuffle")
             .refreshable { await model.start() }
             .overlay(alignment: .top) {
                 if model.loading {

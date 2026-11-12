@@ -24,7 +24,7 @@ struct SettingsScreen: View {
                         .foregroundStyle(model.online ? .green : .secondary)
                     }
                 } header: {
-                    Text("Serveur ReelPick")
+                    Text("Serveur CineShuffle")
                 } footer: {
                     Text("L'adresse de l'application Heroku. Sans serveur, le tirage et les suggestions fonctionnent quand même : seuls les votes de la communauté manquent.")
                 }
@@ -36,12 +36,12 @@ struct SettingsScreen: View {
                 }
 
                 Section("À propos") {
-                    Link("Code source", destination: URL(string: "https://github.com/maxlestage/ReelPick")!)
-                    Link("Confidentialité", destination: URL(string: "https://maxlestage.github.io/ReelPick/confidentialite/")!)
+                    Link("Code source", destination: URL(string: "https://github.com/maxlestage/CineShuffle")!)
+                    Link("Confidentialité", destination: URL(string: "https://maxlestage.github.io/CineShuffle/confidentialite/")!)
                     Text("Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB. Disponibilités : JustWatch.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    Text("Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; ReelPick n'est affilié à aucune d'elles.")
+                    Text("Netflix, Prime Video, Disney+ et HBO Max sont des marques de leurs propriétaires respectifs ; CineShuffle n'est affilié à aucune d'elles.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

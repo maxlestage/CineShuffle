@@ -1,13 +1,13 @@
 //! D'où viennent les titres : TMDB (tout le catalogue) quand une clé est configurée,
 //! le fichier de titres d'un export statique, ou la sélection embarquée. Si TMDB ne
-//! répond pas, ReelPick continue avec la sélection embarquée.
+//! répond pas, CineShuffle continue avec la sélection embarquée.
 
 use std::sync::RwLock;
 
-use reelpick::catalog::{
+use cineshuffle::catalog::{
     Kind, PICKS, Platform, Profile, Suggestion, Title, builtin, builtin_title,
 };
-use reelpick::{local_picks, local_suggestions};
+use cineshuffle::{local_picks, local_suggestions};
 
 use super::tmdb;
 

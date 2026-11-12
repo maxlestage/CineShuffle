@@ -10,7 +10,7 @@ use std::sync::RwLock;
 
 use paquets::prelude::*;
 
-/// Le préfixe des liens (`""`, ou `/ReelPick` sur GitHub Pages).
+/// Le préfixe des liens (`""`, ou `/CineShuffle` sur GitHub Pages).
 static BASE: RwLock<String> = RwLock::new(String::new());
 /// L'adresse publique du site, pour les URL absolues.
 static SITE_URL: RwLock<Option<String>> = RwLock::new(None);
@@ -87,8 +87,8 @@ pub const THEME_COLOR: &str = "#0b0b14";
 
 /// Le manifeste de l'application installable.
 fn pwa() -> Pwa {
-    Pwa::new("ReelPick")
-        .short_name("ReelPick")
+    Pwa::new("CineShuffle")
+        .short_name("CineShuffle")
         .description("5 films et séries au hasard sur Netflix, Prime Video, Disney+ et HBO Max, vos votes et des suggestions selon vos goûts.")
         .lang("fr")
         .start_url("/")
@@ -199,14 +199,14 @@ mod tests {
     }
 
     /// L'application iOS embarque le catalogue : il doit rester celui du serveur.
-    /// Pour le mettre à jour : `cargo run -- catalog-json > ios/ReelPick/catalog.json`.
+    /// Pour le mettre à jour : `cargo run -- catalog-json > ios/CineShuffle/catalog.json`.
     #[test]
     fn ios_catalog_is_up_to_date() {
-        let embedded = include_str!("../../ios/ReelPick/catalog.json");
+        let embedded = include_str!("../../ios/CineShuffle/catalog.json");
         assert_eq!(
             embedded.trim(),
             api::catalog_json().trim(),
-            "ios/ReelPick/catalog.json est en retard : cargo run -- catalog-json > ios/ReelPick/catalog.json"
+            "ios/CineShuffle/catalog.json est en retard : cargo run -- catalog-json > ios/CineShuffle/catalog.json"
         );
     }
 
@@ -271,8 +271,10 @@ mod tests {
 
         if tmdb::client().is_none() {
             let liked = |key: &str| {
-                paquets::serde_json::to_value(reelpick::catalog::builtin_title(key).unwrap().seen())
-                    .unwrap()
+                paquets::serde_json::to_value(
+                    cineshuffle::catalog::builtin_title(key).unwrap().seen(),
+                )
+                .unwrap()
             };
             let rec = client
                 .post("/api/recommendations")
