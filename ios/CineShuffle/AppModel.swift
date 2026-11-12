@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// L'état de l'application : le tirage, les goûts, les suggestions et les votes de la
-/// communauté. En ligne, les titres viennent de l'API (tout le catalogue, par TMDB) ;
+/// communauté. En ligne, les titres viennent de l'API (tout le catalogue, par Wikidata) ;
 /// hors ligne, de la sélection embarquée. Les goûts sont gardés dans `UserDefaults`.
 @MainActor
 @Observable

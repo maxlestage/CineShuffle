@@ -2,9 +2,9 @@
 //!
 //! | Route | Rôle |
 //! |---|---|
-//! | `GET /api/status` | la source des titres (`tmdb` ou `selection`) et les plateformes |
+//! | `GET /api/status` | la source des titres (`wikidata` ou `selection`), leur nombre et les plateformes |
 //! | `GET /api/picks?platform=&kind=&seed=` | 5 titres au hasard dans tout le catalogue (la sélection du jour sans `seed`) |
-//! | `GET /api/titles/:key` | un titre complet (`movie:603`, `tv:1399`, `local:12`) |
+//! | `GET /api/titles/:key` | un titre complet (`wd:Q83495` ou `local:12`) |
 //! | `GET /api/catalogue?platform=&kind=&page=` | une page du catalogue d'une plateforme |
 //! | `POST /api/recommendations` | des suggestions selon des votes et des préférences |
 //! | `GET /api/titles` | la sélection embarquée (le secours hors ligne) |
@@ -17,12 +17,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use cineshuffle::catalog::{self, Kind, Platform, Profile, Suggestion, Title};
 use paquets::prelude::*;
 
-use super::{source, tmdb};
+use super::source;
 
 /// Les votes d'un titre.
 #[model]
 pub struct VoteCount {
-    /// La clé du titre (`movie:603`, `tv:1399`, `local:12`).
+    /// La clé du titre (`wd:Q83495` ou `local:12`).
     #[memoire(primary_key)]
     pub title: String,
     /// Les « aimé ».
@@ -60,8 +60,9 @@ pub fn catalog_json() -> String {
 pub async fn status(_req: Request) -> Json<paquets::serde_json::Value> {
     Json(json!({
         "source": source::name(),
+        "titles": source::size(),
         "platforms": Platform::ALL.iter().map(|p| json!({ "id": p.slug(), "name": p.label() })).collect::<Vec<_>>(),
-        "attribution": "Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB. Disponibilités : JustWatch.",
+        "attribution": "Catalogue : Wikidata (CC0). Résumés et affiches : Wikipédia (CC BY-SA, et droits de leurs auteurs).",
     }))
 }
 
@@ -177,9 +178,12 @@ pub async fn stats(req: Request) -> Result<Json<Vec<StatJson>>> {
     ))
 }
 
-/// Une clé de titre valide : de la sélection embarquée, ou de TMDB.
+/// Une clé de titre valide : de la sélection embarquée, ou de Wikidata (`wd:Q…`).
 fn valid_key(key: &str) -> bool {
-    catalog::builtin_title(key).is_some() || tmdb::parse_key(key).is_some()
+    catalog::builtin_title(key).is_some()
+        || key.strip_prefix("wd:Q").is_some_and(|n| {
+            !n.is_empty() && n.len() <= 12 && n.bytes().all(|b| b.is_ascii_digit())
+        })
 }
 
 /// Le corps de `POST /api/votes` : le vote (`liked`, `null` pour le retirer) et

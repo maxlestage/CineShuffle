@@ -1,8 +1,8 @@
 //! Le modèle des titres, le tirage au sort et le moteur de suggestions.
 //!
 //! Compilé deux fois : dans le serveur et dans le paquet WebAssembly des îlots. Les
-//! titres viennent de TMDB (tout le catalogue des plateformes, avec affiches, résumés et
-//! acteurs : voir `src/web/tmdb.rs`), ou, sans clé TMDB, de la sélection embarquée de
+//! titres viennent de Wikidata et Wikipédia (tout ce qui est associé aux plateformes, avec
+//! affiches, résumés et acteurs : voir `src/web/wiki.rs`), ou de la sélection embarquée de
 //! 80 titres ci-dessous, qui sert aussi de secours hors ligne.
 
 use std::fmt;
@@ -248,55 +248,6 @@ impl Genre {
         Genre::ALL.into_iter().find(|g| g.slug() == slug)
     }
 
-    /// Les genres de CineShuffle d'un genre de TMDB (films et séries).
-    pub fn from_tmdb(id: u32) -> &'static [Genre] {
-        match id {
-            28 => &[Genre::Action],
-            12 | 37 => &[Genre::Aventure],
-            10759 => &[Genre::Action, Genre::Aventure],
-            16 => &[Genre::Animation],
-            35 => &[Genre::Comedie],
-            80 => &[Genre::Crime],
-            99 => &[Genre::Documentaire],
-            18 => &[Genre::Drame],
-            10751 | 10762 => &[Genre::Famille],
-            14 => &[Genre::Fantastique],
-            10765 => &[Genre::Sf, Genre::Fantastique],
-            36 | 10752 | 10768 => &[Genre::Historique],
-            27 => &[Genre::Horreur],
-            9648 => &[Genre::Mystere],
-            10749 => &[Genre::Romance],
-            878 => &[Genre::Sf],
-            53 => &[Genre::Thriller],
-            _ => &[],
-        }
-    }
-
-    /// Le genre TMDB correspondant, pour les films ou les séries (`None` s'il n'existe pas).
-    pub fn tmdb_id(self, kind: Kind) -> Option<u32> {
-        match (self, kind) {
-            (Genre::Action, Kind::Film) => Some(28),
-            (Genre::Aventure, Kind::Film) => Some(12),
-            (Genre::Action | Genre::Aventure, Kind::Serie) => Some(10759),
-            (Genre::Animation, _) => Some(16),
-            (Genre::Comedie, _) => Some(35),
-            (Genre::Crime, _) => Some(80),
-            (Genre::Documentaire, _) => Some(99),
-            (Genre::Drame, _) => Some(18),
-            (Genre::Famille, _) => Some(10751),
-            (Genre::Fantastique, Kind::Film) => Some(14),
-            (Genre::Fantastique | Genre::Sf, Kind::Serie) => Some(10765),
-            (Genre::Historique, Kind::Film) => Some(36),
-            (Genre::Historique, Kind::Serie) => Some(10768),
-            (Genre::Horreur, Kind::Film) => Some(27),
-            (Genre::Mystere, _) => Some(9648),
-            (Genre::Romance, Kind::Film) => Some(10749),
-            (Genre::Sf, Kind::Film) => Some(878),
-            (Genre::Thriller, Kind::Film) => Some(53),
-            _ => None,
-        }
-    }
-
     fn bit(self) -> u16 {
         1 << (self as u16)
     }
@@ -311,7 +262,7 @@ fn mask(genres: &[Genre]) -> u16 {
 #[data]
 #[derive(PartialEq)]
 pub struct Title {
-    /// L'identifiant stable : `movie:603` et `tv:1399` (TMDB) ou `local:12` (sélection embarquée).
+    /// L'identifiant stable : `wd:Q83495` (Wikidata) ou `local:12` (sélection embarquée).
     pub key: String,
     /// Le titre, en français quand il existe.
     pub name: String,
@@ -329,7 +280,7 @@ pub struct Title {
     /// Le résumé.
     #[serde(default)]
     pub overview: String,
-    /// L'adresse de l'affiche (TMDB), s'il y en a une.
+    /// L'adresse de l'affiche (Wikipédia), s'il y en a une.
     #[serde(default)]
     pub poster: Option<String>,
     /// Les acteurs principaux.
@@ -338,9 +289,12 @@ pub struct Title {
     /// La durée d'un film, ou le nombre de saisons d'une série.
     #[serde(default)]
     pub length: Option<String>,
-    /// La note moyenne sur 10 (TMDB).
+    /// La note moyenne sur 10, si elle est connue.
     #[serde(default)]
     pub rating: Option<f32>,
+    /// La page Wikipédia d'où viennent le résumé et l'affiche (crédit CC BY-SA).
+    #[serde(default)]
+    pub link: Option<String>,
     /// L'emoji de l'affiche dessinée (quand il n'y a pas d'image).
     pub emoji: String,
     /// La teinte de l'affiche dessinée (0 à 359).
@@ -405,7 +359,7 @@ impl Title {
     }
 }
 
-/// Une teinte stable pour une clé (les affiches dessinées des titres TMDB sans image).
+/// Une teinte stable pour une clé (les affiches dessinées des titres sans image).
 pub fn hue_for(key: &str) -> u16 {
     let hash = key.bytes().fold(0x811c_9dc5_u32, |h, b| {
         (h ^ u32::from(b)).wrapping_mul(0x0100_0193)
@@ -433,7 +387,7 @@ pub struct Seen {
 
 macro_rules! titles {
     ($( $id:literal, $name:literal, $year:literal, $kind:ident, $platform:ident, [$($genre:ident),+], $length:literal, $emoji:literal, $hue:literal, $pitch:literal; )+) => {
-        /// La sélection embarquée (secours sans clé TMDB, et hors ligne).
+        /// La sélection embarquée (secours quand Wikidata ne répond pas, et hors ligne).
         fn builtin_titles() -> Vec<Title> {
             vec![
                 $( Title {
@@ -448,6 +402,7 @@ macro_rules! titles {
                     cast: Vec::new(),
                     length: Some($length.to_owned()),
                     rating: None,
+                    link: None,
                     emoji: $emoji.to_owned(),
                     hue: $hue,
                 }, )+
@@ -949,17 +904,6 @@ mod tests {
         );
         assert_eq!(filtered[0].title.key, "local:20");
         assert!(filtered[0].reason.starts_with("Dans vos genres"));
-    }
-
-    #[test]
-    fn tmdb_genres_round_trip() {
-        for g in Genre::ALL {
-            if let Some(id) = g.tmdb_id(Kind::Film) {
-                assert!(Genre::from_tmdb(id).contains(&g), "{g:?}");
-            }
-        }
-        assert_eq!(Genre::from_tmdb(10765), [Genre::Sf, Genre::Fantastique]);
-        assert!(Genre::from_tmdb(10770).is_empty());
     }
 
     #[test]

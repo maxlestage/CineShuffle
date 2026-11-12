@@ -28,6 +28,10 @@ if [ "$target" != target ]; then
 fi
 echo "       target/release/cineshuffle prêt"
 
+echo "-----> Catalogue Wikidata (tous les films et séries des plateformes)"
+# Au démarrage, l'app le lit tout de suite ; s'il manque, elle le charge en arrière-plan.
+target/release/cineshuffle catalogue data/catalogue.json || echo "       Wikidata ne répond pas : chargé au démarrage"
+
 echo "-----> Compilation des îlots (WebAssembly)"
 rustup target add wasm32-unknown-unknown
 cargo build --locked --lib --target wasm32-unknown-unknown --profile wasm-release

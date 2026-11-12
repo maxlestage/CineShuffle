@@ -15,7 +15,7 @@ struct APIClient: Sendable {
         }
     }
 
-    /// `GET /api/picks` : 5 titres au hasard dans tout le catalogue (TMDB).
+    /// `GET /api/picks` : 5 titres au hasard dans tout le catalogue (Wikidata).
     func picks(seed: UInt64?, platform: Platform?, kind: Kind?) async throws -> [Title] {
         var query: [URLQueryItem] = []
         if let seed { query.append(URLQueryItem(name: "seed", value: String(seed))) }

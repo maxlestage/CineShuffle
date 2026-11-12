@@ -2,7 +2,7 @@ import Foundation
 
 /// Le tirage au sort et le moteur de suggestions hors ligne : la même logique que le
 /// site (src/catalog.rs), sur la sélection embarquée, pour que l'iPhone fonctionne
-/// sans réseau. En ligne, l'application interroge l'API (tout le catalogue, par TMDB).
+/// sans réseau. En ligne, l'application interroge l'API (tout le catalogue, par Wikidata).
 enum Engine {
     /// Le nombre de titres d'un tirage.
     static let picksCount = 5

@@ -6,8 +6,8 @@
 #
 # - variable CINESHUFFLE_API_URL : l'adresse de l'app Heroku ; le site appelle alors son
 #   API (tout le catalogue, avec les votes de la communauté).
-# - secret   TMDB_TOKEN : un instantané des titres les plus populaires de chaque
-#   plateforme (affiches, résumés) est publié avec le site, pour fonctionner sans serveur.
+# - sans elle, un instantané des titres les plus connus de chaque plateforme (Wikidata,
+#   résumés et affiches de Wikipédia) est publié avec le site.
 
 name: GitHub Pages
 
@@ -66,7 +66,6 @@ jobs:
       - name: Pages et fichiers
         if: steps.pages.outcome == 'success'
         env:
-          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
           CINESHUFFLE_API_URL: ${{ vars.CINESHUFFLE_API_URL }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}

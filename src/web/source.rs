@@ -1,17 +1,16 @@
-//! D'où viennent les titres : TMDB (tout le catalogue) quand une clé est configurée,
-//! le fichier de titres d'un export statique, ou la sélection embarquée. Si TMDB ne
-//! répond pas, CineShuffle continue avec la sélection embarquée.
+//! D'où viennent les titres : le catalogue complet de Wikidata (avec Wikipédia pour les
+//! fiches), l'instantané d'un export statique, ou la sélection embarquée. Si Wikidata
+//! n'est pas encore chargé ou ne répond pas, CineShuffle continue avec la sélection
+//! embarquée.
 
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
-use cineshuffle::catalog::{
-    Kind, PICKS, Platform, Profile, Suggestion, Title, builtin, builtin_title,
-};
+use cineshuffle::catalog::{Kind, Platform, Profile, Suggestion, Title, builtin, builtin_title};
 use cineshuffle::{local_picks, local_suggestions};
 
-use super::tmdb;
+use super::wiki;
 
-/// Les titres d'un export statique (instantané de TMDB, ou la sélection embarquée).
+/// Les titres d'un export statique (instantané de Wikidata, ou la sélection embarquée).
 static POOL: RwLock<Option<Vec<Title>>> = RwLock::new(None);
 
 /// Règle les titres de l'export statique.
@@ -25,31 +24,35 @@ fn pool() -> Option<Vec<Title>> {
     POOL.read().ok().and_then(|p| p.clone())
 }
 
-/// Le nom de la source : `tmdb` ou `selection`.
+/// Le catalogue de Wikidata, sauf pendant un export statique.
+fn live() -> Option<Arc<wiki::Catalogue>> {
+    if pool().is_some() {
+        None
+    } else {
+        wiki::current().filter(|c| !c.is_empty())
+    }
+}
+
+/// Le nom de la source : `wikidata` ou `selection`.
 pub fn name() -> &'static str {
-    if tmdb::client().is_some() && pool().is_none() {
-        "tmdb"
+    if live().is_some() {
+        "wikidata"
     } else {
         "selection"
     }
 }
 
-/// TMDB, sauf pendant un export statique.
-fn live() -> Option<std::sync::Arc<tmdb::Tmdb>> {
-    if pool().is_some() {
-        None
-    } else {
-        tmdb::client()
-    }
+/// Le nombre de titres connus.
+pub fn size() -> usize {
+    live().map_or_else(|| offline().len(), |c| c.len())
 }
 
 /// 5 titres tirés au sort.
 pub async fn picks(seed: u64, platform: Option<Platform>, kind: Option<Kind>) -> Vec<Title> {
-    if let Some(tmdb) = live() {
-        match tmdb.picks(seed, platform, kind, PICKS).await {
-            Ok(found) if !found.is_empty() => return found,
-            Ok(_) => {}
-            Err(e) => eprintln!("{e} : tirage dans la sélection embarquée"),
+    if let Some(catalogue) = live() {
+        let found = wiki::draw(&catalogue, seed, platform, kind).await;
+        if !found.is_empty() {
+            return found;
         }
     }
     let pool = pool();
@@ -58,11 +61,8 @@ pub async fn picks(seed: u64, platform: Option<Platform>, kind: Option<Kind>) ->
 
 /// Les suggestions d'un profil.
 pub async fn recommend(profile: &Profile, n: usize) -> Vec<Suggestion> {
-    if let Some(tmdb) = live() {
-        match tmdb.recommend(profile, n).await {
-            Ok(found) => return found,
-            Err(e) => eprintln!("{e} : suggestions dans la sélection embarquée"),
-        }
+    if let Some(catalogue) = live() {
+        return wiki::suggest(&catalogue, profile, n).await;
     }
     let pool = pool();
     let mut found = local_suggestions(pool.as_deref(), profile);
@@ -70,7 +70,7 @@ pub async fn recommend(profile: &Profile, n: usize) -> Vec<Suggestion> {
     found
 }
 
-/// Un titre par sa clé.
+/// Un titre par sa clé, avec sa fiche complète.
 pub async fn title(key: &str) -> Option<Title> {
     if let Some(t) = builtin_title(key) {
         return Some(t.clone());
@@ -78,57 +78,44 @@ pub async fn title(key: &str) -> Option<Title> {
     if let Some(t) = pool().and_then(|p| p.into_iter().find(|t| t.key == key)) {
         return Some(t);
     }
-    live()?.title(key).await.ok()
+    let catalogue = live()?;
+    let t = catalogue.get(key)?.clone();
+    Some(wiki::details(&catalogue, &t, true).await)
 }
 
-/// Une page du catalogue d'une plateforme, et le nombre de pages (`None` sans TMDB).
+/// Une page du catalogue d'une plateforme et le nombre de pages (`None` sans Wikidata).
 pub async fn browse(platform: Platform, kind: Kind, page: u32) -> Option<(Vec<Title>, u32)> {
-    live()?.browse(platform, kind, page).await.ok()
+    let catalogue = live()?;
+    Some(wiki::browse(&catalogue, platform, kind, page).await)
 }
 
-/// Les titres connus sans TMDB : ceux de l'export statique, ou la sélection embarquée.
+/// Les titres connus sans Wikidata : ceux de l'export statique, ou la sélection embarquée.
 pub fn offline() -> Vec<Title> {
     pool().unwrap_or_else(|| builtin().to_vec())
 }
 
-/// Un instantané du catalogue pour un site statique : les titres les plus populaires
-/// de chaque plateforme (films et séries) si TMDB est configuré, la sélection
-/// embarquée sinon.
-pub async fn snapshot(pages: u32) -> Vec<Title> {
-    let Some(tmdb) = tmdb::client() else {
+/// Un instantané pour un site statique : les titres les plus connus de chaque
+/// plateforme (films et séries), avec résumé et affiche, ou la sélection embarquée si
+/// Wikidata ne répond pas.
+pub async fn snapshot(per_list: usize) -> Vec<Title> {
+    // `CINESHUFFLE_OFFLINE` : aucun appel réseau (la CI vérifie l'export ainsi).
+    if std::env::var_os("CINESHUFFLE_OFFLINE").is_some() {
         return builtin().to_vec();
-    };
-    let mut all: Vec<Title> = Vec::new();
-    for platform in Platform::ALL {
-        for kind in [Kind::Film, Kind::Serie] {
-            for page in 1..=pages {
-                match tmdb.browse(platform, kind, page).await {
-                    Ok((titles, total)) => {
-                        for t in titles {
-                            match all.iter_mut().find(|known| known.key == t.key) {
-                                Some(known) => {
-                                    if !known.platforms.contains(&platform) {
-                                        known.platforms.push(platform);
-                                    }
-                                }
-                                None => all.push(t),
-                            }
-                        }
-                        if page >= total {
-                            break;
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("{e}");
-                        break;
-                    }
-                }
-            }
-        }
     }
-    if all.is_empty() {
+    let catalogue = match wiki::current().filter(|c| !c.is_empty()) {
+        Some(c) => c,
+        None => match wiki::fetch().await {
+            Ok(c) => wiki::install(c),
+            Err(e) => {
+                eprintln!("{e} : instantané de la sélection embarquée");
+                return builtin().to_vec();
+            }
+        },
+    };
+    let titles = wiki::snapshot(&catalogue, per_list).await;
+    if titles.is_empty() {
         builtin().to_vec()
     } else {
-        all
+        titles
     }
 }

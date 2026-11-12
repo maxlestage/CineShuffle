@@ -19,7 +19,6 @@ env:
   GIT_CONFIG_KEY_0: credential.https://github.com.helper
   GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$REPOS_TOKEN"; }; f'
   CARGO_TERM_COLOR: always
-  HAS_TMDB: ${{ secrets.TMDB_TOKEN != '' }}
 
 jobs:
   test:
@@ -37,12 +36,12 @@ jobs:
         run: cargo clippy --locked --all-targets -- -D warnings
       - name: Clippy (îlots, wasm32)
         run: cargo clippy --locked --lib --target wasm32-unknown-unknown -- -D warnings
-      - name: Tests (catalogue, tirage, suggestions, pages, API, catalogue iOS)
+      - name: Tests (catalogue, tirage, suggestions, Wikidata, pages, API, catalogue iOS)
         run: cargo test --locked
-      - name: TMDB en direct (avec le secret TMDB_TOKEN)
-        env:
-          TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
-        if: env.HAS_TMDB == 'true'
+      # Les services publics peuvent être lents ou indisponibles : informatif seulement.
+      - name: Wikidata et Wikipédia en direct
+        continue-on-error: true
+        timeout-minutes: 10
         run: cargo test --locked --bin cineshuffle -- --ignored --nocapture live
       - name: Îlots (WebAssembly)
         run: |
@@ -53,6 +52,8 @@ jobs:
           wasm-bindgen --target web --no-typescript --remove-name-section --remove-producers-section \
             --out-dir pkg target/wasm32-unknown-unknown/wasm-release/cineshuffle.wasm
       - name: Export statique
+        env:
+          CINESHUFFLE_OFFLINE: "1"
         run: BASE_PATH="/${{ github.event.repository.name }}" cargo run --locked --release -- export dist
 
   merge:

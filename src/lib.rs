@@ -9,7 +9,7 @@
 //!   le formulaire pour proposer un titre.
 //!
 //! Les titres viennent de l'API du serveur (tout le catalogue des plateformes, par
-//! TMDB), d'un fichier JSON sur un site statique, ou de la sélection embarquée. Les
+//! Wikidata et Wikipédia), d'un fichier JSON sur un site statique, ou de la sélection embarquée. Les
 //! goûts de la personne (`Taste`) sont gardés dans un `Store` du `localStorage`,
 //! partagé par les deux îlots et les onglets.
 
@@ -214,7 +214,7 @@ fn chip(label: impl Into<String>, pressed: impl Fn() -> bool + 'static) -> Eleme
         .text(label.into())
 }
 
-/// L'affiche d'un titre : l'image de TMDB, sur une affiche dessinée en 2D (dégradé,
+/// L'affiche d'un titre : l'image de Wikipédia, sur une affiche dessinée en 2D (dégradé,
 /// anneaux animés, emoji) qui sert aussi quand il n'y a pas d'image.
 pub fn poster(t: &Title) -> Element {
     div()
@@ -335,6 +335,14 @@ fn card(
                     t.overview.clone()
                 }))
                 .child(t.cast_line().map(|c| p().class("card-cast").text(c)))
+                .child(t.link.as_ref().map(|url| {
+                    p().class("card-link").child(
+                        a().href(url.clone())
+                            .attr("rel", "noopener")
+                            .attr("target", "_blank")
+                            .text("Résumé : Wikipédia ↗"),
+                    )
+                }))
                 .child(
                     ul().class("tags")
                         .attr("aria-label", "Genres")

@@ -444,10 +444,13 @@ button, input, select { font: inherit; color: inherit; }
 .footer-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding-top: 22px; border-top: 1px solid var(--border); }
 .fine-print { font-size: .8rem; color: var(--muted); margin: 0; flex: 1 1 260px; min-width: 0; }
 .fine-print p { margin: 0 0 .5em; }
-.tmdb-logo {
-  display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 6px; text-decoration: none;
-  font-weight: 900; letter-spacing: .08em; color: #0d253f; background: linear-gradient(90deg, #90cea1, #01b4e4);
+.data-credits { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.data-credits a {
+  display: inline-block; padding: 2px 10px; border-radius: 6px; text-decoration: none; font-weight: 800;
+  color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
 }
+.card-link { font-size: .78rem; color: var(--muted); margin: 0 0 .5em; }
+.card-link a { color: inherit; }
 .footer-actions { display: flex; gap: 10px; }
 .icon-link { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); transition: transform .2s; }
 .icon-link:hover { transform: translateY(-2px); }

@@ -3,7 +3,8 @@
 //!
 //!     cargo run                      # http://localhost:3000 ($PORT sur Heroku)
 //!     cargo run -- export dist       # le site en fichiers statiques (GitHub Pages)
-//!     cargo run -- catalog-json      # le catalogue en JSON (pour l'application iOS)
+//!     cargo run -- catalog-json      # la sélection embarquée en JSON (application iOS)
+//!     cargo run -- catalogue         # le catalogue Wikidata, dans data/catalogue.json
 //!
 //! `BASE_PATH` (par exemple `/CineShuffle`) préfixe les liens de l'export, `SITE_URL`
 //! donne les adresses absolues (balises canoniques, Open Graph, sitemap).
@@ -26,6 +27,24 @@ fn main() -> std::io::Result<()> {
                 site_url,
             ))?;
             println!("🎬 {files} fichiers écrits dans {dir}");
+            Ok(())
+        }
+        Some("catalogue") => {
+            // Le catalogue Wikidata, enregistré pour le prochain démarrage (au déploiement).
+            let file = args
+                .next()
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(web::wiki::default_file);
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()?;
+            match runtime.block_on(web::wiki::fetch()) {
+                Ok(catalogue) => {
+                    web::wiki::save(&catalogue, &file)?;
+                    println!("🎬 {} titres dans {}", catalogue.len(), file.display());
+                }
+                Err(e) => eprintln!("{e} : le catalogue sera chargé au démarrage"),
+            }
             Ok(())
         }
         Some("catalog-json") => {
